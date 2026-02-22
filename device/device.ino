@@ -9,7 +9,7 @@
 #include <ArduinoJson.h>
 
 // --- CONFIGURATION ---
-#define PERIOD 10000
+#define PERIOD 5000
 //const char* ssid = "A56 de Estela";
 //const char* password = "4hk2fbthruumfqf";
 const char* ssid = "CASABAR";
@@ -28,6 +28,8 @@ DHT dht(DHTPIN, DHTTYPE);
 // --- WIFI and MQTT ---
 WiFiClient espClient;
 PubSubClient client(espClient);
+
+unsigned long msg_count = 0; //
 
 /**
  * @brief Reconnects the MQTT client to the broker.
@@ -86,6 +88,7 @@ void loop() {
   StaticJsonDocument<200> data; // Reduced size for simple telemetry
   data["temperature"] = isnan(t) ? 0 : t;
   data["humidity"] = isnan(h) ? 0 : h;
+  data["seq"] = msg_count;
 
   char buffer[256];
   serializeJson(data, buffer);
@@ -98,5 +101,6 @@ void loop() {
     
   client.publish(mqtt_topic, buffer);
 
+  msg_count++;
   delay(PERIOD);
 }
