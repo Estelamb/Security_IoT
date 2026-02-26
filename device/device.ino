@@ -10,10 +10,10 @@
 
 // --- CONFIGURATION ---
 #define PERIOD 5000
-//const char* ssid = "A56 de Estela";
-//const char* password = "4hk2fbthruumfqf";
-const char* ssid = "CASABAR";
-const char* password = "Ju.Es.200105.260701";
+const char* ssid = "A56 de Estela";
+const char* password = "4hk2fbthruumfqf";
+//const char* ssid = "CASABAR";
+//const char* password = "Ju.Es.200105.260701";
 
 // REPLACE THIS with your Raspberry Pi 5 IP address
 const char* mqtt_server = "192.168.0.216"; 

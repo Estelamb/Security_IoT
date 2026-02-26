@@ -87,10 +87,10 @@ def on_message(client, userdata, msg):
         current_state = payload.get("state", -1)
 
         # Alarm flags
-        alarm_dos = False
+        alarm_flood = False
         alarm_replay = False
         alarm_markov = False
-        alarm_ai = False
+        alarm_di = False
 
         # Registro para Process Mining 
         event_records.append({
@@ -102,7 +102,7 @@ def on_message(client, userdata, msg):
         # A. DOS DETECTION
         if time_diff < FLOOD_THRESHOLD:
             print(f"🚨 ALERT [DoS/Flooding]")
-            alarm_dos = True
+            alarm_flood = True
         last_msg_time = arrival_time
 
         # B. REPLAY ATTACK DETECTION
@@ -128,7 +128,7 @@ def on_message(client, userdata, msg):
         score = model.decision_function(current_reading)
         if score[0] < -0.10:
             print(f"🚨 ALERT [Data Injection]")
-            alarm_ai = True
+            alarm_di = True
 
         # --- SEND TO THINGSBOARD ---
         tb_payload = {
@@ -136,15 +136,15 @@ def on_message(client, userdata, msg):
             "humidity": hum,
             "sequence": current_seq,
             "state": current_state,
-            "alarm_dos": alarm_dos,
+            "alarm_flood": alarm_flood,
             "alarm_replay": alarm_replay,
             "alarm_markov": alarm_markov,
-            "alarm_ai": alarm_ai,
-            "system_status": "Anomalous" if (alarm_dos or alarm_replay or alarm_markov or alarm_ai) else "Normal"
+            "alarm_di": alarm_di,
+            "system_status": "Anomalous" if (alarm_flood or alarm_replay or alarm_markov or alarm_di) else "Normal"
         }
         tb_client.publish(TB_TOPIC, json.dumps(tb_payload), qos=1)
         
-        if not alarm_dos and not alarm_replay and not alarm_markov and not alarm_ai:
+        if not alarm_flood and not alarm_replay and not alarm_markov and not alarm_di:
             print(f"✅ Normal: T={temp}, H={hum} sent to ThingsBoard.")
                 
     except Exception as e:
