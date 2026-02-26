@@ -84,11 +84,22 @@ void loop() {
   float h = dht.readHumidity();
   float t = dht.readTemperature();
 
+  // Bins de Temperatura (Ejemplo: <20 Cold, 20-30 Normal, >30 Hot)
+  int t_bin = (t < 20) ? 0 : (t <= 30 ? 1 : 2);
+  
+  // Bins de Humedad (Ejemplo: <30 Dry, 30-60 Normal, >60 Humid)
+  int h_bin = (h < 30) ? 0 : (h <= 60 ? 1 : 2);
+
+  // Mapeo a 9 estados (0 a 8)
+  // Fórmula: (T_bin * 3) + H_bin
+  int current_state = t_bin * 3 + h_bin;        
+
   // 3. Create JSON Payload
   StaticJsonDocument<200> data; // Reduced size for simple telemetry
   data["temperature"] = isnan(t) ? 0 : t;
   data["humidity"] = isnan(h) ? 0 : h;
   data["seq"] = msg_count;
+  data["state"] = current_state;
 
   char buffer[256];
   serializeJson(data, buffer);
