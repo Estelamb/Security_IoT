@@ -1,0 +1,6 @@
+sphinx==7.3.7
+sphinx-rtd-theme==2.0.0
+sphinx-copybutton
+sphinx_simplepdf
+sphinxcontrib-mermaid
+setuptools
