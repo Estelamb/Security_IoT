@@ -187,7 +187,7 @@ def on_message(client, userdata, msg):
             "alarm_replay": alarms["replay"],
             "alarm_markov": alarms["markov"],
             "alarm_di": alarms["di"],
-            "status": "Anomalous" if is_anomalous else "Normal"
+            "system_status": "Anomalous" if is_anomalous else "Normal"
         }
         tb_client.publish(TB_TOPIC, json.dumps(tb_payload), qos=1)
         
