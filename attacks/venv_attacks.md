@@ -7,6 +7,9 @@ python3 -m venv .venv_attacks
 source .venv_attacks/bin/activate
 pip install -r requirements.txt
 
+# Run UI
+streamlit run ui_attacks.py
+
 -----------------------------------
 
 # Libraries
