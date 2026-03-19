@@ -191,6 +191,8 @@ def on_message(client, userdata, msg):
         }
         tb_client.publish(TB_TOPIC, json.dumps(tb_payload), qos=1)
         
+        local_client.publish("device_1/dashboard", json.dumps(tb_payload), qos=0)
+        
         if not is_anomalous:
             print(f"✅ Normal: T={temp}, H={hum} sent to ThingsBoard.")
                 
