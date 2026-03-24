@@ -44,11 +44,9 @@ Comprehensive documentation covering the codebases, mathematical models, and dep
 
 ---
 
-## 👥 Group C
+# 👥 Group C
 Yingying Gao
-
 Nouha Madiouni
-
 Estela Mora Barba
 
 Security for IoT Applications, MIoT - 2026
