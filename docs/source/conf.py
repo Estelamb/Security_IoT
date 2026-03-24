@@ -53,7 +53,9 @@ autodoc_mock_imports = [
     'ultralytics',
     'tqdm',
     'numpy',
-    'streamlit'                  
+    'streamlit',
+    'pandas',
+    'sklearn'                  
 ]
 
 # Enable automatic module discovery
