@@ -54,8 +54,10 @@ autodoc_mock_imports = [
     'tqdm',
     'numpy',
     'streamlit',
+    'streamlit_autorefresh',
     'pandas',
-    'sklearn'                  
+    'sklearn',
+    'pm4py'                  
 ]
 
 # Enable automatic module discovery
