@@ -3,7 +3,7 @@ ESP32 + DHT22 Device
 
 Overview
 --------
-The ``device.ino`` script runs on an ESP32 microcontroller. It acts as the primary physical edge node for the IoT Security Testbed. Its main responsibilities are reading physical environment data, translating that data into discrete logical states for Process Mining, and transmitting the telemetry to the local Raspberry Pi 5 Mosquitto broker.
+The ``device.ino`` script runs on an ESP32 microcontroller. It acts as the primary physical node for the IoT Security Testbed. Its main responsibilities are reading physical environment data, translating that data into discrete logical states for Process Mining, and transmitting the telemetry to the local Raspberry Pi 5 Mosquitto broker.
 
 Hardware & Dependencies
 -----------------------
