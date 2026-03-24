@@ -120,7 +120,7 @@ left_col, right_col = st.columns([2, 1])
 
 with left_col:
     # 2. Quick Alarm Indicators
-    st.subheader("Threat Status")
+    st.subheader("🎯 Threat Status")
     
     active_threats = False
     
