@@ -51,7 +51,9 @@ autodoc_mock_imports = [
     'cv2',
     'PIL',
     'ultralytics',
-    'tqdm'                  
+    'tqdm',
+    'numpy',
+    'streamlit'                  
 ]
 
 # Enable automatic module discovery
