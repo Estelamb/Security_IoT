@@ -53,7 +53,9 @@ autodoc_mock_imports = [
     'pandas',
     'PIL',
     'ultralytics',
-    'tqdm'
+    'tqdm',
+    'sklearn',
+    'pm4py'   
 ]
 
 # Enable automatic module discovery
