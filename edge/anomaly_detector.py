@@ -13,10 +13,10 @@ LOCAL_BROKER = "localhost"
 LOCAL_TOPIC = "device_1/telemetry"
 
 # ThingsBoard Configuration (UPM Server)
-# TB_BROKER = "srv-iot.diatel.upm.es"
-# TB_PORT = 8883
-# TB_TOKEN = "BKt667UYnxs92JTOACkg" 
-# TB_TOPIC = "v1/devices/me/telemetry"
+TB_BROKER = "srv-iot.diatel.upm.es"
+TB_PORT = 8883
+TB_TOKEN = "BKt667UYnxs92JTOACkg" 
+TB_TOPIC = "v1/devices/me/telemetry"
 
 # EMQX Broker Configuration (Cloud Dashboard)
 DASHBOARD_BROKER = "broker.emqx.io"
@@ -81,25 +81,25 @@ prev_state = -1
 last_msg_time = time.time()
 
 # --- 5. THINGSBOARD CLIENT SETUP ---
-# tb_client = mqtt.Client(callback_api_version=mqtt.CallbackAPIVersion.VERSION2)
-# tb_client.username_pw_set(TB_TOKEN)
-# 
-# def on_tb_connect(client, userdata, flags, rc, properties=None):
-#     if rc == 0:
-#         print(f"🌐 Connected to ThingsBoard at {TB_BROKER}")
-#     else:
-#         print(f"❌ TB Connection Failed with code {rc}")
-# 
-# tb_client.on_connect = on_tb_connect
+tb_client = mqtt.Client(callback_api_version=mqtt.CallbackAPIVersion.VERSION2)
+tb_client.username_pw_set(TB_TOKEN)
+
+def on_tb_connect(client, userdata, flags, rc, properties=None):
+    if rc == 0:
+        print(f"🌐 Connected to ThingsBoard at {TB_BROKER}")
+    else:
+        print(f"❌ TB Connection Failed with code {rc}")
+
+tb_client.on_connect = on_tb_connect
 
 # Configuración TLS robusta para el puerto 8883
-# try:
-#     context = ssl.create_default_context()
-#     tb_client.tls_set_context(context)
-#     tb_client.connect(TB_BROKER, TB_PORT, 60)
-#     tb_client.loop_start()
-# except Exception as e:
-#     print(f"⚠️ TLS/Connection Error: {e}. Check if port 8883 is open.")
+try:
+    context = ssl.create_default_context()
+    tb_client.tls_set_context(context)
+    tb_client.connect(TB_BROKER, TB_PORT, 60)
+    tb_client.loop_start()
+except Exception as e:
+    print(f"⚠️ TLS/Connection Error: {e}. Check if port 8883 is open.")
 
 def export_process_graph():
     if len(event_records) < 10: return
@@ -194,12 +194,12 @@ def on_message(client, userdata, msg):
             "alarm_di": alarms["di"],
             "system_status": "Anomalous" if is_anomalous else "Normal"
         }
-        #tb_client.publish(TB_TOPIC, json.dumps(db_payload), qos=1)
+        tb_client.publish(TB_TOPIC, json.dumps(db_payload), qos=1)
         
         cloud_dashboard_client.publish(DASHBOARD_TOPIC, json.dumps(db_payload), qos=0)
         
         if not is_anomalous:
-            print(f"✅ Normal: T={temp}, H={hum} sent to ThingsBoard.")
+            print(f"✅ Normal: T={temp}, H={hum} sent to the dashboard")
                 
     except Exception as e:
         print(f"❌ Error processing message: {e}")
