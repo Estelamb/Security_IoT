@@ -28,7 +28,7 @@ jobs:
       run: |
           python -m pip install --upgrade pip
           pip install sphinx sphinx-rtd-theme sphinx-copybutton sphinx_simplepdf sphinxcontrib-mermaid
-          pip install "numpy<2.0.0" "protobuf<=3.20.3" "pandas<2.2.0" streamlit pytz scikit-learn pm4py paho-mqtt
+          pip install numpy==1.26.4 pandas==2.1.4 protobuf==3.20.3 streamlit==1.31.0 pytz scikit-learn pm4py paho-mqtt
 
     - name: Build documentation
       working-directory: docs
