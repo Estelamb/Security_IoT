@@ -1,5 +1,6 @@
 """
 IoT Anomaly Detector and Edge Node Aggregator.
+==============================================
 
 This module listens to local MQTT telemetry from IoT devices, analyzes the data stream
 in real-time for cyber threats (Flooding, Replay, Data Injection, and Markov Tampering),
@@ -19,20 +20,31 @@ import pm4py
 from pm4py.objects.log.util import dataframe_utils
 
 # --- 1. CONFIGURATION ---
-LOCAL_BROKER = "localhost"
-LOCAL_TOPIC = "device_1/telemetry"
 
-# EMQX Broker Configuration (Cloud Dashboard)
+LOCAL_BROKER = "localhost"
+"""str: The hostname or IP of the local Mosquitto broker running on the Raspberry Pi 5."""
+
+LOCAL_TOPIC = "device_1/telemetry"
+"""str: The local MQTT topic where the ESP32 edge node publishes its sensor data."""
+
 DASHBOARD_BROKER = "broker.emqx.io"
+"""str: The public cloud MQTT broker used to forward processed data to the Streamlit UI."""
+
 DASHBOARD_TOPIC = "ad_iot/group_c/device_1/dashboard"
+"""str: The cloud MQTT topic the Streamlit dashboard subscribes to."""
 
 cloud_dashboard_client = mqtt.Client(callback_api_version=mqtt.CallbackAPIVersion.VERSION2)
 cloud_dashboard_client.connect(DASHBOARD_BROKER, 1883)
 cloud_dashboard_client.loop_start()
 
 FLOOD_THRESHOLD = 0.5 
+"""float: Minimum allowed time (in seconds) between incoming messages to avoid triggering a DoS alert."""
+
 NORMAL_TEMP_RANGE = (15, 35)
+"""tuple of int: The physical safe bounds for temperature in degrees Celsius."""
+
 NORMAL_HUM_RANGE = (30, 70)
+"""tuple of int: The physical safe bounds for relative humidity percentages."""
 
 STATE_NAMES = {
     0: "Cold_Dry",
@@ -45,21 +57,21 @@ STATE_NAMES = {
     7: "Hot_Normal",
     8: "Hot_Humid"
 }
+"""dict: Maps the calculated 0-8 integer state to a human-readable string for Process Mining logs."""
 
 # --- 2. MARKOV MODEL SETUP (9 States) ---
-# 1. Base initialization (small probability for the rest)
+
 transition_matrix = np.eye(9) * 0.8 + 0.025
+"""numpy.ndarray: A 9x9 transition matrix representing the probability of moving from one physical state to another."""
 
-# 2. DEFINE IMPOSSIBLE JUMPS (Extreme to Extreme)
+# DEFINE IMPOSSIBLE JUMPS (Extreme to Extreme)
 
-# --- Temperature Jumps (Cold <-> Hot) ---
 # Cannot jump directly from Cold (0,1,2) to Hot (6,7,8)
 for c in [0, 1, 2]:
     for h in [6, 7, 8]:
         transition_matrix[c][h] = 0.0 # Cold to Hot
         transition_matrix[h][c] = 0.0 # Hot to Cold
 
-# --- Humidity Jumps (Dry <-> Humid) ---
 # Cannot jump directly from Dry (0,3,6) to Humid (2,5,8)
 for d in [0, 3, 6]:
     for hu in [2, 5, 8]:
@@ -67,14 +79,16 @@ for d in [0, 3, 6]:
         transition_matrix[hu][d] = 0.0 # Humid to Dry
         
 # --- 3. AI INITIALIZATION (Isolation Forest) ---
+
 def generate_reference_model():
     """
     Generates and trains the baseline AI anomaly detection model.
 
-    Creates synthetic reference data representing normal operating conditions
-    and fits an Isolation Forest model to establish the anomaly boundaries.
+    Creates synthetic reference data representing normal operating conditions based on
+    the predefined physical boundaries (NORMAL_TEMP_RANGE and NORMAL_HUM_RANGE).
+    It then fits an Isolation Forest model to establish the anomaly decision boundaries.
 
-    :return: A trained Isolation Forest model.
+    :return: A trained Machine Learning model for anomaly scoring.
     :rtype: sklearn.ensemble.IsolationForest
     """
     print("⚙️ Generating professional reference model...")
@@ -88,18 +102,28 @@ def generate_reference_model():
 model = generate_reference_model()
 
 # --- 4. STATE TRACKING & PROCESS MINING ---
+
 event_records = []
+"""list of dict: Stores a history of state transitions for PM4Py Process Mining."""
+
 last_seq = -1
+"""int: Tracks the last seen sequence number to detect Replay Attacks."""
+
 prev_state = -1
+"""int: Tracks the previously recorded physical state (0-8) to validate Markov transitions."""
+
 last_msg_time = time.time()
+"""float: Unix timestamp of the last received message to calculate transmission speed (Flooding)."""
 
 def export_process_graph():
     """
-    Exports the current process mining data as a visual graph.
+    Exports the current Process Mining data as a visual graph.
 
-    Converts the stored event records into a pandas DataFrame, processes it
-    with pm4py, and saves a Directly-Follows Graph (DFG) as a PNG image.
-    Requires at least 10 logged events to generate the graph.
+    Converts the stored ``event_records`` into a pandas DataFrame, processes it
+    with the pm4py library, and saves a Directly-Follows Graph (DFG) as a PNG image 
+    (``process_map.png``). Requires at least 10 logged events to trigger generation.
+
+    :raises Exception: Catches and logs any errors during graph generation to prevent edge node crashes.
     """
     if len(event_records) < 10: return
     try:
@@ -113,19 +137,25 @@ def export_process_graph():
         print(f"❌ Process Mining Error: {e}")
 
 # --- 5. CORE LOGIC (Anomaly Detection) ---
+
 def on_message(client, userdata, msg):
     """
     MQTT callback function executed upon receiving a new telemetry message.
 
-    Parses the incoming JSON payload and evaluates it against four threat vectors:
-    Flooding (DoS), Replay Attacks, Markov State Tampering, and AI Data Injection.
-    Constructs an updated security state payload and publishes it to the cloud broker.
+    Parses the incoming JSON payload and evaluates it against four independent threat vectors:
+    
+    1. **Flooding (DoS):** Checks if the time between messages is under ``FLOOD_THRESHOLD``.
+    2. **Replay Attack:** Validates that the ``seq`` number is strictly increasing.
+    3. **Markov Tampering:** Uses the ``transition_matrix`` to ensure physical states don't teleport.
+    4. **Data Injection:** Evaluates the telemetry against the ``IsolationForest`` AI and hardcoded ranges.
+
+    It finally constructs a comprehensive security state payload and publishes it to the cloud broker.
 
     :param client: The MQTT client instance for this callback.
     :type client: paho.mqtt.client.Client
     :param userdata: The private user data as set in Client() or user_data_set().
     :type userdata: Any
-    :param msg: An instance of MQTTMessage containing the topic, qos, and payload.
+    :param msg: An instance of MQTTMessage containing the topic, qos, and payload bytes.
     :type msg: paho.mqtt.client.MQTTMessage
     """
     global prev_state, last_seq, last_msg_time, model, event_records
