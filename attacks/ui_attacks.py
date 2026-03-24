@@ -1,9 +1,12 @@
 """
-IoT Attack Control Center.
+This Streamlit application provides an interactive user interface to simulate various
+cyberattacks against an IoT edge node running an anomaly detection system.
 
-This Streamlit application provides a user interface to simulate various
-cyberattacks (Data Injection, Flooding, Markov Process Tampering, and Replay Attacks)
-against an IoT edge node running an anomaly detection system.
+The supported attack vectors include:
+1. **Data Injection:** Sending spoofed/impossible physical values.
+2. **Flooding (DoS):** Overwhelming the broker with high-frequency messages.
+3. **Markov Process Tampering:** Injecting logically impossible state transitions.
+4. **Replay Attacks:** Re-transmitting old, captured telemetry sequences.
 """
 
 import streamlit as st
@@ -15,22 +18,29 @@ import time
 st.set_page_config(page_title="IoT Attack Control Center", page_icon="👾", layout="wide")
 
 DEFAULT_BROKER = "localhost"
+"""str: The default local IP address of the MQTT broker where the simulated attacks will be sent."""
+
 DEFAULT_TOPIC = "device_1/telemetry"
+"""str: The default MQTT topic that the target edge node is listening to for telemetry data."""
 
 # --- HELPER FUNCTIONS ---
 def publish_message(broker, topic, payload, qos=1):
     """
-    Handles the MQTT connection and publishing of a payload.
+    Handles the MQTT connection and publishing of a single malicious payload.
 
-    :param broker: The IP address or hostname of the MQTT broker.
+    This function instantiates a temporary MQTT client, connects to the target broker,
+    publishes the JSON-encoded payload, and immediately disconnects to simulate a
+    stateless injection.
+
+    :param broker: The IP address or hostname of the target MQTT broker.
     :type broker: str
-    :param topic: The MQTT topic to publish the message to.
+    :param topic: The MQTT topic to publish the malicious message to.
     :type topic: str
     :param payload: The data dictionary to send (will be serialized to JSON).
     :type payload: dict
-    :param qos: Quality of Service level for the MQTT message (default is 1).
+    :param qos: Quality of Service level for the MQTT message (default is 1 to guarantee delivery).
     :type qos: int
-    :return: True if the message was successfully published, False otherwise.
+    :return: True if the message was successfully published, False if a connection error occurred.
     :rtype: bool
     """
     try:
@@ -98,6 +108,7 @@ with attack_tab[1]:
         progress_bar = st.progress(0)
         status_text = st.empty()
         
+        # We handle flooding connection manually to avoid connecting/disconnecting 100 times
         client = mqtt.Client(callback_api_version=mqtt.CallbackAPIVersion.VERSION2)
         try:
             client.connect(broker_ip, 1883)
@@ -106,7 +117,7 @@ with attack_tab[1]:
                 client.publish(mqtt_topic, json.dumps(payload), qos=0)
                 time.sleep(flood_delay)
                 
-                # Update UI
+                # Update UI Progress
                 progress = int(((i + 1) / flood_count) * 100)
                 progress_bar.progress(progress)
                 status_text.text(f"Sent {i + 1}/{flood_count} messages...")
@@ -146,10 +157,14 @@ with attack_tab[2]:
         init_payload = {"temperature": markov_init_temp, "humidity": markov_init_hum, "seq": 100, "state": markov_init_state}
         tgt_payload = {"temperature": markov_tgt_temp, "humidity": markov_tgt_hum, "seq": 101, "state": markov_tgt_state}
         
+        # Send initial baseline state
         publish_message(broker_ip, mqtt_topic, init_payload)
         st.info(f"Set initial state: {markov_init_state}. Waiting 1 second...")
+        
+        # Pause to allow the edge node to register the `prev_state`
         time.sleep(1)
         
+        # Send the impossible transition
         if publish_message(broker_ip, mqtt_topic, tgt_payload):
             st.success(f"Injected impossible transition: State {markov_init_state} -> {markov_tgt_state}")
 
@@ -177,10 +192,14 @@ with attack_tab[3]:
         valid_payload = {"temperature": 24.5, "humidity": 50.0, "seq": current_seq, "state": 4}
         replay_payload = {"temperature": 24.5, "humidity": 50.0, "seq": replay_seq, "state": 4}
         
+        # Send the valid sequence to advance the edge node's memory
         publish_message(broker_ip, mqtt_topic, valid_payload)
         st.info(f"Sent valid packet (seq: {current_seq}). Waiting 1 second...")
+        
+        # Pause to allow edge node processing
         time.sleep(1)
         
+        # Inject the older, captured sequence
         if publish_message(broker_ip, mqtt_topic, replay_payload):
             st.success(f"Injected Replay Attack (seq: {replay_seq})")
     

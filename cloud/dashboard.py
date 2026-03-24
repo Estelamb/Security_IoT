@@ -1,6 +1,4 @@
 """
-IoT Security SOC Dashboard.
-
 This Streamlit application acts as the Security Operations Center (SOC) monitor.
 It subscribes to a public cloud MQTT broker (EMQX) to receive real-time telemetry and
 anomaly alerts from the edge node, displaying them in an interactive web interface.
@@ -24,6 +22,7 @@ st_autorefresh(interval=1000, key="data_refresh")
 
 # Local Timezone Setup (Crucial for Streamlit Cloud deployment)
 LOCAL_TZ = pytz.timezone("Europe/Madrid")
+"""pytz.tzinfo.BaseTzInfo: Local timezone configuration to ensure accurate UI timestamps, especially when hosted on UTC cloud servers."""
 
 # --- THREAD-SAFE COMMUNICATION ---
 @st.cache_resource
@@ -38,6 +37,7 @@ def get_message_queue():
     return queue.Queue()
 
 msg_queue = get_message_queue()
+"""queue.Queue: Global thread-safe queue used to safely transfer decoded MQTT payloads to the Streamlit session state."""
 
 # --- INITIALIZE SESSION STATE ---
 if 'current_data' not in st.session_state:
@@ -57,7 +57,16 @@ if 'alarms_log' not in st.session_state:
 def on_message(client, userdata, msg):
     """
     MQTT callback function triggered when a new message arrives from the cloud broker.
-    It decodes the JSON payload and safely places it into the processing queue.
+    
+    It decodes the JSON payload and safely places it into the processing queue 
+    so the Streamlit main thread can update the UI without race conditions.
+
+    :param client: The MQTT client instance for this callback.
+    :type client: paho.mqtt.client.Client
+    :param userdata: The private user data as set in Client() or user_data_set().
+    :type userdata: Any
+    :param msg: An instance of MQTTMessage containing the topic, qos, and payload.
+    :type msg: paho.mqtt.client.MQTTMessage
     """
     try:
         payload = json.loads(msg.payload.decode())

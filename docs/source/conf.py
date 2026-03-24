@@ -55,7 +55,10 @@ autodoc_mock_imports = [
     'ultralytics',
     'tqdm',
     'sklearn',
-    'pm4py'   
+    'pm4py',
+    'streamlit',   
+    'streamlit_autorefresh',  
+    'pytz'                   
 ]
 
 # Enable automatic module discovery
