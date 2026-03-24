@@ -2,7 +2,7 @@
 
 This document combines the system preparation for the cloud dashboard.
 
-You can access through the next link: [Cloud Dashboard](https://your-iot-dashboard.streamlit.app)
+You can access through the next link: [Cloud Dashboard](https://anomaly-detection-iot-gc.streamlit.app)
 
 ---
 
@@ -31,6 +31,6 @@ streamlit-autorefresh
 ## 3. Deploy to Streamlit Cloud
 1. Go to share.streamlit.io and log in using your GitHub account.
 2. Click the "New app" button.
-3. Select your iot-security-dashboard repository.
+3. Select your repository.
 4. Set the "Main file path" to dashboard.py.
 5. Click "Deploy".

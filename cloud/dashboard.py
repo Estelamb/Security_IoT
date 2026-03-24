@@ -131,7 +131,7 @@ with left_col:
     st.subheader("🚨 Alarms Log")
     if st.session_state.alarms_log:
         alarms_df = pd.DataFrame(st.session_state.alarms_log)
-        st.dataframe(alarms_df, width=True, hide_index=True)
+        st.dataframe(alarms_df, use_container_width=True, hide_index=True)
         if st.button("Clear Alarms Log"):
             st.session_state.alarms_log = []
     else:
@@ -148,17 +148,43 @@ with right_col:
     with st.container(border=True):
         st.metric(label="Sequence Number", value=data['sequence'])
     
-    state_labels = ["Cold/Dry", "Cold/Norm", "Cold/Hum", "Norm/Dry", "Norm/Norm", "Norm/Hum", "Hot/Dry", "Hot/Norm", "Hot/Hum"]
-    state_str = state_labels[data['state']] if 0 <= data['state'] <= 8 else "Unknown"
+    # Textos actualizados con las palabras completas
+    state_labels = [
+        "Cold/Dry", "Cold/Normal", "Cold/Humid", 
+        "Normal/Dry", "Normal/Normal", "Normal/Humid", 
+        "Hot/Dry", "Hot/Normal", "Hot/Humid"
+    ]
+    
+    # Separar el string y aplicar el formato deseado
+    if 0 <= data['state'] <= 8:
+        temp_str, hum_str = state_labels[data['state']].split("/")
+        formatted_state = f"Temperatura {temp_str} / Humedad {hum_str} ({data['state']})"
+    else:
+        formatted_state = f"Unknown ({data['state']})"
     
     with st.container(border=True):
-        st.metric(label="Markov State", value=f"{data['state']} ({state_str})")
-
+        st.metric(label="Markov State", value=formatted_state)
+        
     st.divider()
     
     # 5. Quick Alarm Indicators
     st.subheader("Threat Status")
-    st.error("Flooding (DoS)") if data["alarm_flood"] else st.success("Flooding (DoS)")
-    st.error("Replay Attack") if data["alarm_replay"] else st.success("Replay Attack")
-    st.error("Markov Tampering") if data["alarm_markov"] else st.success("Markov Tampering")
-    st.error("Data Injection") if data["alarm_di"] else st.success("Data Injection")
+    
+    active_threats = False
+    
+    if data.get("alarm_flood"):
+        st.error("🚨 Flooding (DoS)")
+        active_threats = True
+    if data.get("alarm_replay"):
+        st.error("🚨 Replay Attack")
+        active_threats = True
+    if data.get("alarm_markov"):
+        st.error("🚨 Markov Tampering")
+        active_threats = True
+    if data.get("alarm_di"):
+        st.error("🚨 Data Injection")
+        active_threats = True
+        
+    # Show a single clean message if nothing is happening
+    if not active_threats:
+        st.success("✅ Secure (No active alarms)")

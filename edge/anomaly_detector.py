@@ -6,17 +6,10 @@ import time
 import pandas as pd
 import pm4py
 from pm4py.objects.log.util import dataframe_utils
-import ssl
 
 # --- 1. CONFIGURATION ---
 LOCAL_BROKER = "localhost"
 LOCAL_TOPIC = "device_1/telemetry"
-
-# ThingsBoard Configuration (UPM Server)
-TB_BROKER = "srv-iot.diatel.upm.es"
-TB_PORT = 8883
-TB_TOKEN = "BKt667UYnxs92JTOACkg" 
-TB_TOPIC = "v1/devices/me/telemetry"
 
 # EMQX Broker Configuration (Cloud Dashboard)
 DASHBOARD_BROKER = "broker.emqx.io"
@@ -43,24 +36,24 @@ STATE_NAMES = {
 }
 
 # --- 2. MARKOV MODEL SETUP (9 States) ---
-# 1. Inicialización base (probabilidad pequeña para el resto)
+# 1. Base initialization (small probability for the rest)
 transition_matrix = np.eye(9) * 0.8 + 0.025
 
-# 2. DEFINIR SALTOS IMPOSIBLES (Extremo a Extremo)
+# 2. DEFINE IMPOSSIBLE JUMPS (Extreme to Extreme)
 
-# --- Saltos de Temperatura (Cold <-> Hot) ---
-# No se puede pasar de Cold (0,1,2) a Hot (6,7,8) directamente
+# --- Temperature Jumps (Cold <-> Hot) ---
+# Cannot jump directly from Cold (0,1,2) to Hot (6,7,8)
 for c in [0, 1, 2]:
     for h in [6, 7, 8]:
-        transition_matrix[c][h] = 0.0 # Cold a Hot
-        transition_matrix[h][c] = 0.0 # Hot a Cold
+        transition_matrix[c][h] = 0.0 # Cold to Hot
+        transition_matrix[h][c] = 0.0 # Hot to Cold
 
-# --- Saltos de Humedad (Dry <-> Humid) ---
-# No se puede pasar de Dry (0,3,6) a Humid (2,5,8) directamente
+# --- Humidity Jumps (Dry <-> Humid) ---
+# Cannot jump directly from Dry (0,3,6) to Humid (2,5,8)
 for d in [0, 3, 6]:
     for hu in [2, 5, 8]:
-        transition_matrix[d][hu] = 0.0 # Dry a Humid
-        transition_matrix[hu][d] = 0.0 # Humid a Dry
+        transition_matrix[d][hu] = 0.0 # Dry to Humid
+        transition_matrix[hu][d] = 0.0 # Humid to Dry
         
 # --- 3. AI INITIALIZATION (Isolation Forest) ---
 def generate_reference_model():
@@ -80,27 +73,6 @@ last_seq = -1
 prev_state = -1
 last_msg_time = time.time()
 
-# --- 5. THINGSBOARD CLIENT SETUP ---
-tb_client = mqtt.Client(callback_api_version=mqtt.CallbackAPIVersion.VERSION2)
-tb_client.username_pw_set(TB_TOKEN)
-
-def on_tb_connect(client, userdata, flags, rc, properties=None):
-    if rc == 0:
-        print(f"🌐 Connected to ThingsBoard at {TB_BROKER}")
-    else:
-        print(f"❌ TB Connection Failed with code {rc}")
-
-tb_client.on_connect = on_tb_connect
-
-# Configuración TLS robusta para el puerto 8883
-try:
-    context = ssl.create_default_context()
-    tb_client.tls_set_context(context)
-    tb_client.connect(TB_BROKER, TB_PORT, 60)
-    tb_client.loop_start()
-except Exception as e:
-    print(f"⚠️ TLS/Connection Error: {e}. Check if port 8883 is open.")
-
 def export_process_graph():
     if len(event_records) < 10: return
     try:
@@ -113,7 +85,7 @@ def export_process_graph():
     except Exception as e:
         print(f"❌ Process Mining Error: {e}")
 
-# --- 6. CORE LOGIC (Anomaly Detection) ---
+# --- 5. CORE LOGIC (Anomaly Detection) ---
 def on_message(client, userdata, msg):
     global prev_state, last_seq, last_msg_time, model, event_records
     
@@ -128,10 +100,10 @@ def on_message(client, userdata, msg):
         current_state = payload.get("state", -1)
         state_label = STATE_NAMES.get(current_state, f"State_{current_state}")
 
-        # Alarm flags iniciales
+        # Initial Alarm flags
         alarms = {"flood": False, "replay": False, "markov": False, "di": False}
 
-        # Registro para Process Mining
+        # Process Mining Logging
         event_records.append({
             "case_id": "device_1", 
             "activity": state_label, 
@@ -144,7 +116,7 @@ def on_message(client, userdata, msg):
         last_msg_time = arrival_time
 
         # --- B. REPLAY ATTACK DETECTION ---
-        # Solo comprobamos Replay si NO hay Flooding activo para evitar falsos positivos por desorden
+        # Check Replay only if there's NO flooding to avoid false positives
         if not alarms["flood"] and current_seq != -1:
             if current_seq == 0:
                 last_seq = 0
@@ -154,7 +126,7 @@ def on_message(client, userdata, msg):
             else:
                 last_seq = current_seq
         elif alarms["flood"]:
-            # Durante un flood, simplemente actualizamos el máximo visto para no quedarnos bloqueados
+            # Update max seen during flood to avoid blocking
             last_seq = max(last_seq, current_seq)
 
         # C. MARKOV ANALYSIS
@@ -165,15 +137,14 @@ def on_message(client, userdata, msg):
                 export_process_graph()
         prev_state = current_state
 
-        # D. IMMEDIATE AI DETECTION (Ajustado)
+        # D. IMMEDIATE AI DETECTION
         current_reading = np.array([[temp, hum]])
         score = model.decision_function(current_reading)
         
-        # Umbral más sensible: si el score es menor que 0.0, es una anomalía
+        # Anomaly threshold: < 0.0
         ai_anomaly = score[0] < 0.0 
 
-        # REGLA DE ORO: Si está fuera de los rangos físicos, es Anomaly Detection sí o sí
-        # Esto apoya vuestro objetivo de detectar fallos técnicos 
+        # Golden Rule: Out of physical bounds is an anomaly
         out_of_bounds = (temp < NORMAL_TEMP_RANGE[0] or temp > NORMAL_TEMP_RANGE[1] or 
                          hum < NORMAL_HUM_RANGE[0] or hum > NORMAL_HUM_RANGE[1])
 
@@ -181,7 +152,7 @@ def on_message(client, userdata, msg):
             print(f"🚨 ALERT [Data Injection/Out of Range] Score: {score[0]:.4f}")
             alarms["di"] = True
 
-        # --- ENVÍO A THINGSBOARD ---
+        # --- SEND TO CLOUD DASHBOARD ---
         is_anomalous = any(alarms.values())
         db_payload = {
             "temperature": temp,
@@ -194,7 +165,6 @@ def on_message(client, userdata, msg):
             "alarm_di": alarms["di"],
             "system_status": "Anomalous" if is_anomalous else "Normal"
         }
-        tb_client.publish(TB_TOPIC, json.dumps(db_payload), qos=1)
         
         cloud_dashboard_client.publish(DASHBOARD_TOPIC, json.dumps(db_payload), qos=0)
         
@@ -204,7 +174,7 @@ def on_message(client, userdata, msg):
     except Exception as e:
         print(f"❌ Error processing message: {e}")
 
-# --- 7. LOCAL SUBSCRIBER ---
+# --- 6. LOCAL SUBSCRIBER ---
 local_client = mqtt.Client(callback_api_version=mqtt.CallbackAPIVersion.VERSION2)
 local_client.on_message = on_message
 local_client.connect(LOCAL_BROKER, 1883)
