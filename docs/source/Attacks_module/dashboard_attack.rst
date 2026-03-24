@@ -1,7 +1,7 @@
 Attacks User Interface
 ======================
 
-.. toctree::
-   :maxdepth: 1
-
-   ui_attacks
+.. automodule:: ui_attacks
+   :members:
+   :undoc-members:
+   :show-inheritance:

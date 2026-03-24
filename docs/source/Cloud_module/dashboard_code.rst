@@ -1,7 +1,7 @@
 Anomaly Detection Dashboard
 ===========================
 
-.. toctree::
-   :maxdepth: 1
-
-   dashboard
+.. automodule:: dashboard
+   :members:
+   :undoc-members:
+   :show-inheritance:

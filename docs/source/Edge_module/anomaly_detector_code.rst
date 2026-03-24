@@ -1,7 +1,7 @@
 Anomaly Detector
 ================
 
-.. toctree::
-   :maxdepth: 1
-
-   anomaly_detector
+.. automodule:: anomaly_detector
+   :members:
+   :undoc-members:
+   :show-inheritance:
