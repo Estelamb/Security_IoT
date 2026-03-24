@@ -64,6 +64,21 @@ if 'sphinx' in sys.modules:
 else:
     # Si es el programa real, hacemos las matemáticas normales
     transition_matrix = np.eye(9) * 0.8 + 0.025
+    """numpy.ndarray: A 9x9 transition matrix representing the probability of moving from one physical state to another."""
+
+    # DEFINE IMPOSSIBLE JUMPS (Extreme to Extreme)
+
+    # Cannot jump directly from Cold (0,1,2) to Hot (6,7,8)
+    for c in [0, 1, 2]:
+        for h in [6, 7, 8]:
+            transition_matrix[c][h] = 0.0 # Cold to Hot
+            transition_matrix[h][c] = 0.0 # Hot to Cold
+
+    # Cannot jump directly from Dry (0,3,6) to Humid (2,5,8)
+    for d in [0, 3, 6]:
+        for hu in [2, 5, 8]:
+            transition_matrix[d][hu] = 0.0 # Dry to Humid
+            transition_matrix[hu][d] = 0.0 # Humid to Dry
 """numpy.ndarray: A 9x9 transition matrix representing the probability of moving from one physical state to another."""
 
 # DEFINE IMPOSSIBLE JUMPS (Extreme to Extreme)
