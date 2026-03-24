@@ -1,2 +1,4 @@
+.venv/
 .venv_edge/
+.venv_cloud/
 .venv_attacks/
