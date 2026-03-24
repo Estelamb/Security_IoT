@@ -18,7 +18,7 @@ Edge Documentation
    Edge_module/anomaly_detector_code
 
 Cloud Documentation
-------------------
+-------------------
 
 .. toctree::
    :maxdepth: 2

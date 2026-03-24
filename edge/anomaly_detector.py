@@ -244,10 +244,11 @@ def on_message(client, userdata, msg):
         print(f"❌ Error processing message: {e}")
 
 # --- 6. LOCAL SUBSCRIBER ---
-local_client = mqtt.Client(callback_api_version=mqtt.CallbackAPIVersion.VERSION2)
-local_client.on_message = on_message
-local_client.connect(LOCAL_BROKER, 1883)
-local_client.subscribe(LOCAL_TOPIC)
+if __name__ == "__main__":
+    local_client = mqtt.Client(callback_api_version=mqtt.CallbackAPIVersion.VERSION2)
+    local_client.on_message = on_message
+    local_client.connect(LOCAL_BROKER, 1883)
+    local_client.subscribe(LOCAL_TOPIC)
 
-print("🎧 Listening for local device telemetry...")
-local_client.loop_forever()
+    print("🎧 Listening for local device telemetry...")
+    local_client.loop_forever()

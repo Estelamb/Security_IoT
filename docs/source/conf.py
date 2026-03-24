@@ -49,16 +49,9 @@ autodoc_mock_imports = [
     'six',
     'flask',
     'cv2',
-    'numpy',
-    'pandas',
     'PIL',
     'ultralytics',
-    'tqdm',
-    'sklearn',
-    'pm4py',
-    'streamlit',   
-    'streamlit_autorefresh',  
-    'pytz'                   
+    'tqdm'                  
 ]
 
 # Enable automatic module discovery

@@ -139,90 +139,98 @@ while not msg_queue.empty():
     
     st.session_state.alarms_log = st.session_state.alarms_log[:50]
 
-# --- UI LAYOUT ---
-st.title("🛡️ IoT Security: Anomaly Detection Monitor")
-data = st.session_state.current_data
+def main():
+    '''
+    Main function to render the Streamlit dashboard UI. It displays real-time telemetry,
+    system status, historical charts, and an alarms log based on the data received from the MQTT subscriber.
+    '''
+    # --- UI LAYOUT ---
+    st.title("🛡️ IoT Security: Anomaly Detection Monitor")
+    data = st.session_state.current_data
 
-# 1. System Status Banner
-if data["system_status"] == "Anomalous":
-    st.error(f"⚠️ SYSTEM STATUS: {data['system_status'].upper()} ⚠️")
-elif data["system_status"] == "Normal":
-    st.success(f"✅ SYSTEM STATUS: {data['system_status'].upper()}")
-else:
-    st.warning(f"⏳ {data['system_status']}")
-
-st.divider()
-
-left_col, right_col = st.columns([2, 1])
-
-with left_col:
-    # 2. Quick Alarm Indicators
-    st.subheader("🎯 Threat Status")
-    
-    active_threats = False
-    
-    if data.get("alarm_flood"):
-        st.error("🚨 Flooding (DoS)")
-        active_threats = True
-    if data.get("alarm_replay"):
-        st.error("🚨 Replay Attack")
-        active_threats = True
-    if data.get("alarm_markov"):
-        st.error("🚨 Markov Tampering")
-        active_threats = True
-    if data.get("alarm_di"):
-        st.error("🚨 Data Injection")
-        active_threats = True
-        
-    # Show a single clean message if nothing is happening
-    if not active_threats:
-        st.success("✅ Secure (No active alarms)")
-        
-    # 3. Historical Data Chart
-    st.subheader("📈 Historical Data")
-    if not st.session_state.history.empty:
-        chart_data = st.session_state.history.set_index('Time')
-        st.line_chart(chart_data[['Temperature', 'Humidity']], color=["#F32121", "#55C3FF"])
+    # 1. System Status Banner
+    if data["system_status"] == "Anomalous":
+        st.error(f"⚠️ SYSTEM STATUS: {data['system_status'].upper()} ⚠️")
+    elif data["system_status"] == "Normal":
+        st.success(f"✅ SYSTEM STATUS: {data['system_status'].upper()}")
     else:
-        st.info("Waiting for telemetry data to build charts...")
+        st.warning(f"⏳ {data['system_status']}")
 
-    # 4. Alarms Table
-    st.subheader("🚨 Alarms Log")
-    if st.session_state.alarms_log:
-        alarms_df = pd.DataFrame(st.session_state.alarms_log)
-        st.dataframe(alarms_df, use_container_width=True, hide_index=True)
-        if st.button("Clear Alarms Log"):
-            st.session_state.alarms_log = []
-    else:
-        st.success("No alarms detected in the current session.")
+    st.divider()
 
-with right_col:
-    # 5. Horizontal Value Cards
-    st.subheader("📡 Live Telemetry")
-    
-    with st.container(border=True):
-        st.metric(label="Temperature", value=f"{data['temperature']:.2f} °C")
-    with st.container(border=True):
-        st.metric(label="Humidity", value=f"{data['humidity']:.2f} %")
-    with st.container(border=True):
-        st.metric(label="Sequence Number", value=data['sequence'])
-    
-    # English labels with full words
-    state_labels = [
-        "Cold/Dry", "Cold/Normal", "Cold/Humid", 
-        "Normal/Dry", "Normal/Normal", "Normal/Humid", 
-        "Hot/Dry", "Hot/Normal", "Hot/Humid"
-    ]
-    
-    # Format: temp_str Temperature / hum_str Humidity / state State
-    if 0 <= data['state'] <= 8:
-        temp_str, hum_str = state_labels[data['state']].split("/")
-        # Note the TWO SPACES before each \n to force a line break in Markdown
-        formatted_state = f"**{temp_str} Temperature** \n**{hum_str} Humidity** \n**State {data['state']}**"
-    else:
-        formatted_state = f"**Unknown state {data['state']}**"
-    
-    # Using Markdown inside a container to mimic the metric card look
-    with st.container(border=True):
-        st.caption("Markov State") 
-        st.markdown(formatted_state)
+    left_col, right_col = st.columns([2, 1])
+
+    with left_col:
+        # 2. Quick Alarm Indicators
+        st.subheader("🎯 Threat Status")
+
+        active_threats = False
+
+        if data.get("alarm_flood"):
+            st.error("🚨 Flooding (DoS)")
+            active_threats = True
+        if data.get("alarm_replay"):
+            st.error("🚨 Replay Attack")
+            active_threats = True
+        if data.get("alarm_markov"):
+            st.error("🚨 Markov Tampering")
+            active_threats = True
+        if data.get("alarm_di"):
+            st.error("🚨 Data Injection")
+            active_threats = True
+
+        # Show a single clean message if nothing is happening
+        if not active_threats:
+            st.success("✅ Secure (No active alarms)")
+
+        # 3. Historical Data Chart
+        st.subheader("📈 Historical Data")
+        if not st.session_state.history.empty:
+            chart_data = st.session_state.history.set_index('Time')
+            st.line_chart(chart_data[['Temperature', 'Humidity']], color=["#F32121", "#55C3FF"])
+        else:
+            st.info("Waiting for telemetry data to build charts...")
+
+        # 4. Alarms Table
+        st.subheader("🚨 Alarms Log")
+        if st.session_state.alarms_log:
+            alarms_df = pd.DataFrame(st.session_state.alarms_log)
+            st.dataframe(alarms_df, use_container_width=True, hide_index=True)
+            if st.button("Clear Alarms Log"):
+                st.session_state.alarms_log = []
+        else:
+            st.success("No alarms detected in the current session.")
+
+    with right_col:
+        # 5. Horizontal Value Cards
+        st.subheader("📡 Live Telemetry")
+
+        with st.container(border=True):
+            st.metric(label="Temperature", value=f"{data['temperature']:.2f} °C")
+        with st.container(border=True):
+            st.metric(label="Humidity", value=f"{data['humidity']:.2f} %")
+        with st.container(border=True):
+            st.metric(label="Sequence Number", value=data['sequence'])
+
+        # English labels with full words
+        state_labels = [
+            "Cold/Dry", "Cold/Normal", "Cold/Humid", 
+            "Normal/Dry", "Normal/Normal", "Normal/Humid", 
+            "Hot/Dry", "Hot/Normal", "Hot/Humid"
+        ]
+
+        # Format: temp_str Temperature / hum_str Humidity / state State
+        if 0 <= data['state'] <= 8:
+            temp_str, hum_str = state_labels[data['state']].split("/")
+            # Note the TWO SPACES before each \n to force a line break in Markdown
+            formatted_state = f"**{temp_str} Temperature** \n**{hum_str} Humidity** \n**State {data['state']}**"
+        else:
+            formatted_state = f"**Unknown state {data['state']}**"
+
+        # Using Markdown inside a container to mimic the metric card look
+        with st.container(border=True):
+            st.caption("Markov State") 
+            st.markdown(formatted_state)
+
+if __name__ == "__main__":
+    main()
