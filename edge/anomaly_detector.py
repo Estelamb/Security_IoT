@@ -15,6 +15,7 @@ import time
 import pandas as pd
 import pm4py
 from pm4py.objects.log.util import dataframe_utils
+import sys
 
 # --- 1. CONFIGURATION ---
 
@@ -58,7 +59,11 @@ STATE_NAMES = {
 
 # --- 2. MARKOV MODEL SETUP (9 States) ---
 
-transition_matrix = np.eye(9) * 0.8 + 0.025
+if 'sphinx' in sys.modules:
+    transition_matrix = []
+else:
+    # Si es el programa real, hacemos las matemáticas normales
+    transition_matrix = np.eye(9) * 0.8 + 0.025
 """numpy.ndarray: A 9x9 transition matrix representing the probability of moving from one physical state to another."""
 
 # DEFINE IMPOSSIBLE JUMPS (Extreme to Extreme)

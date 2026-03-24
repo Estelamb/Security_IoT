@@ -13,6 +13,7 @@ from datetime import datetime
 from streamlit_autorefresh import st_autorefresh
 import queue
 import pytz
+import sys
 
 # --- PAGE CONFIG ---
 st.set_page_config(page_title="IoT Security SOC", page_icon="🛡️", layout="wide")
@@ -21,7 +22,10 @@ st.set_page_config(page_title="IoT Security SOC", page_icon="🛡️", layout="w
 st_autorefresh(interval=1000, key="data_refresh")
 
 # Local Timezone Setup (Crucial for Streamlit Cloud deployment)
-LOCAL_TZ = pytz.timezone("Europe/Madrid")
+if 'sphinx' in sys.modules:
+    LOCAL_TZ = None  # Para que datetime.now(None) no lance error en el mock
+else:
+    LOCAL_TZ = pytz.timezone("Europe/Madrid")
 """pytz.tzinfo.BaseTzInfo: Local timezone configuration to ensure accurate UI timestamps, especially when hosted on UTC cloud servers."""
 
 # --- THREAD-SAFE COMMUNICATION ---
