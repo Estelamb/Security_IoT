@@ -57,7 +57,8 @@ autodoc_mock_imports = [
     'streamlit_autorefresh',
     'pandas',
     'sklearn',
-    'pm4py'                  
+    'pm4py',
+    'pytz'                  
 ]
 
 # Enable automatic module discovery
