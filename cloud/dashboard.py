@@ -119,55 +119,7 @@ st.divider()
 left_col, right_col = st.columns([2, 1])
 
 with left_col:
-    # 2. Historical Data Chart
-    st.subheader("📈 Historical Data")
-    if not st.session_state.history.empty:
-        chart_data = st.session_state.history.set_index('Time')
-        st.line_chart(chart_data[['Temperature', 'Humidity']], color=["#F32121", "#55C3FF"])
-    else:
-        st.info("Waiting for telemetry data to build charts...")
-
-    # 3. Alarms Table
-    st.subheader("🚨 Alarms Log")
-    if st.session_state.alarms_log:
-        alarms_df = pd.DataFrame(st.session_state.alarms_log)
-        st.dataframe(alarms_df, use_container_width=True, hide_index=True)
-        if st.button("Clear Alarms Log"):
-            st.session_state.alarms_log = []
-    else:
-        st.success("No alarms detected in the current session.")
-
-with right_col:
-    # 4. Horizontal Value Cards
-    st.subheader("📡 Live Telemetry")
-    
-    with st.container(border=True):
-        st.metric(label="Temperature", value=f"{data['temperature']:.2f} °C")
-    with st.container(border=True):
-        st.metric(label="Humidity", value=f"{data['humidity']:.2f} %")
-    with st.container(border=True):
-        st.metric(label="Sequence Number", value=data['sequence'])
-    
-    # Textos actualizados con las palabras completas
-    state_labels = [
-        "Cold/Dry", "Cold/Normal", "Cold/Humid", 
-        "Normal/Dry", "Normal/Normal", "Normal/Humid", 
-        "Hot/Dry", "Hot/Normal", "Hot/Humid"
-    ]
-    
-    # Separar el string y aplicar el formato deseado
-    if 0 <= data['state'] <= 8:
-        temp_str, hum_str = state_labels[data['state']].split("/")
-        formatted_state = f"Temperatura {temp_str} / Humedad {hum_str} ({data['state']})"
-    else:
-        formatted_state = f"Unknown ({data['state']})"
-    
-    with st.container(border=True):
-        st.metric(label="Markov State", value=formatted_state)
-        
-    st.divider()
-    
-    # 5. Quick Alarm Indicators
+    # 2. Quick Alarm Indicators
     st.subheader("Threat Status")
     
     active_threats = False
@@ -188,3 +140,52 @@ with right_col:
     # Show a single clean message if nothing is happening
     if not active_threats:
         st.success("✅ Secure (No active alarms)")
+        
+    # 3. Historical Data Chart
+    st.subheader("📈 Historical Data")
+    if not st.session_state.history.empty:
+        chart_data = st.session_state.history.set_index('Time')
+        st.line_chart(chart_data[['Temperature', 'Humidity']], color=["#F32121", "#55C3FF"])
+    else:
+        st.info("Waiting for telemetry data to build charts...")
+
+    # 5. Alarms Table
+    st.subheader("🚨 Alarms Log")
+    if st.session_state.alarms_log:
+        alarms_df = pd.DataFrame(st.session_state.alarms_log)
+        st.dataframe(alarms_df, use_container_width=True, hide_index=True)
+        if st.button("Clear Alarms Log"):
+            st.session_state.alarms_log = []
+    else:
+        st.success("No alarms detected in the current session.")
+
+with right_col:
+    # 5. Horizontal Value Cards
+    st.subheader("📡 Live Telemetry")
+    
+    with st.container(border=True):
+        st.metric(label="Temperature", value=f"{data['temperature']:.2f} °C")
+    with st.container(border=True):
+        st.metric(label="Humidity", value=f"{data['humidity']:.2f} %")
+    with st.container(border=True):
+        st.metric(label="Sequence Number", value=data['sequence'])
+    
+    # Textos actualizados con las palabras completas
+    state_labels = [
+        "Cold/Dry", "Cold/Normal", "Cold/Humid", 
+        "Normal/Dry", "Normal/Normal", "Normal/Humid", 
+        "Hot/Dry", "Hot/Normal", "Hot/Humid"
+    ]
+    
+    # Separar el string y aplicar el formato deseado
+    if 0 <= data['state'] <= 8:
+        temp_str, hum_str = state_labels[data['state']].split("/")
+        formatted_state = f"{temp_str} Temperature \n {hum_str} Humidity \n {data['state']} State"
+    else:
+        formatted_state = f"Unknown state ({data['state']})"
+    
+    with st.container(border=True):
+        st.metric(label="Markov State", value=formatted_state)
+        
+    st.divider()
+    
