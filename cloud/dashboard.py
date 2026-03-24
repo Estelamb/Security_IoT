@@ -103,7 +103,7 @@ while not msg_queue.empty():
     st.session_state.alarms_log = st.session_state.alarms_log[:50]
 
 # --- UI LAYOUT ---
-st.title("🛡️ IoT Security: Edge Node Monitor")
+st.title("🛡️ IoT Security: Anomaly Detection Monitor")
 data = st.session_state.current_data
 
 # 1. System Status Banner
@@ -170,22 +170,24 @@ with right_col:
     with st.container(border=True):
         st.metric(label="Sequence Number", value=data['sequence'])
     
-    # Textos actualizados con las palabras completas
+    # English labels with full words
     state_labels = [
         "Cold/Dry", "Cold/Normal", "Cold/Humid", 
         "Normal/Dry", "Normal/Normal", "Normal/Humid", 
         "Hot/Dry", "Hot/Normal", "Hot/Humid"
     ]
     
-    # Separar el string y aplicar el formato deseado
+    # Format: temp_str Temperature / hum_str Humidity / state State
     if 0 <= data['state'] <= 8:
         temp_str, hum_str = state_labels[data['state']].split("/")
-        formatted_state = f"{temp_str} Temperature \n {hum_str} Humidity \n {data['state']} State"
+        # Note the TWO SPACES before each \n to force a line break in Markdown
+        formatted_state = f"**{temp_str}** Temperature  \n**{hum_str}** Humidity  \n**{data['state']}** State"
     else:
-        formatted_state = f"Unknown state ({data['state']})"
+        formatted_state = f"Unknown  \n{data['state']} State"
     
+    # Using Markdown inside a container to mimic the metric card look
     with st.container(border=True):
-        st.metric(label="Markov State", value=formatted_state)
-        
+        st.caption("Markov State") 
+        st.markdown(formatted_state)
+
     st.divider()
-    
