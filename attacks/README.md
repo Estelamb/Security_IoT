@@ -5,6 +5,8 @@ python3 -m venv .venv_attacks
 
 # Activate Environment
 source .venv_attacks/bin/activate
+.\.venv\Scripts\Activate.ps1 (Windows PowerShell)
+
 pip install -r requirements.txt
 
 # Run UI

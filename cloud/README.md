@@ -17,6 +17,7 @@ python3 -m venv .venv_cloud
 ```bash
 # Activate Environment
 source .venv_cloud/bin/activate
+.\.venv\Scripts\Activate.ps1 (Windows PowerShell)
 
 # Install Libraries
 pip install -r requirements.txt
