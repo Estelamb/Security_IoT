@@ -1,7 +1,4 @@
 """
-IoT Anomaly Detector and Edge Node Aggregator.
-==============================================
-
 This module listens to local MQTT telemetry from IoT devices, analyzes the data stream
 in real-time for cyber threats (Flooding, Replay, Data Injection, and Markov Tampering),
 and forwards the processed security status to a cloud-based dashboard broker.
