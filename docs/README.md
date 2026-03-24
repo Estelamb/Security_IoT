@@ -1,4 +1,4 @@
-# 🛡️ AD-IoT: Anomalies Detection in IoT Security Testbed
+# 🛡️ AD-IoT: Anomalies Detection in IoT Project
 
 Welcome to the **AD-IoT (Anomalies Detection in IoT)** project repository. This project is a comprehensive edge-to-cloud security testbed designed to simulate, monitor, and detect cyber threats in real-time within an IoT environment. 
 
