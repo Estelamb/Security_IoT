@@ -181,13 +181,11 @@ with right_col:
     if 0 <= data['state'] <= 8:
         temp_str, hum_str = state_labels[data['state']].split("/")
         # Note the TWO SPACES before each \n to force a line break in Markdown
-        formatted_state = f"**{temp_str}** Temperature  \n**{hum_str}** Humidity  \n**{data['state']}** State"
+        formatted_state = f"**{temp_str} Temperature**  \n**{hum_str} Humidity**  \n**State {data['state']}**"
     else:
-        formatted_state = f"Unknown  \n{data['state']} State"
+        formatted_state = f"**Unknown state {data['state']}**"
     
     # Using Markdown inside a container to mimic the metric card look
     with st.container(border=True):
         st.caption("Markov State") 
         st.markdown(formatted_state)
-
-    st.divider()
