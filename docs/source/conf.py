@@ -20,6 +20,7 @@ release = '1.0'
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
 sys.path.insert(0, os.path.abspath('../../edge'))
+sys.path.insert(0, os.path.abspath('../../cloud'))
 sys.path.insert(0, os.path.abspath('../../attacks'))
 
 extensions = [

@@ -1,3 +1,14 @@
+"""
+IoT Anomaly Detector and Edge Node Aggregator.
+
+This module listens to local MQTT telemetry from IoT devices, analyzes the data stream
+in real-time for cyber threats (Flooding, Replay, Data Injection, and Markov Tampering),
+and forwards the processed security status to a cloud-based dashboard broker.
+
+It utilizes an Isolation Forest model for AI-based anomaly detection and pm4py for
+Process Mining to track logical state transitions.
+"""
+
 import paho.mqtt.client as mqtt
 import json
 import numpy as np
@@ -57,6 +68,15 @@ for d in [0, 3, 6]:
         
 # --- 3. AI INITIALIZATION (Isolation Forest) ---
 def generate_reference_model():
+    """
+    Generates and trains the baseline AI anomaly detection model.
+
+    Creates synthetic reference data representing normal operating conditions
+    and fits an Isolation Forest model to establish the anomaly boundaries.
+
+    :return: A trained Isolation Forest model.
+    :rtype: sklearn.ensemble.IsolationForest
+    """
     print("⚙️ Generating professional reference model...")
     t_samples = np.random.uniform(NORMAL_TEMP_RANGE[0], NORMAL_TEMP_RANGE[1], 200)
     h_samples = np.random.uniform(NORMAL_HUM_RANGE[0], NORMAL_HUM_RANGE[1], 200)
@@ -74,6 +94,13 @@ prev_state = -1
 last_msg_time = time.time()
 
 def export_process_graph():
+    """
+    Exports the current process mining data as a visual graph.
+
+    Converts the stored event records into a pandas DataFrame, processes it
+    with pm4py, and saves a Directly-Follows Graph (DFG) as a PNG image.
+    Requires at least 10 logged events to generate the graph.
+    """
     if len(event_records) < 10: return
     try:
         df = pd.DataFrame(event_records)
@@ -87,6 +114,20 @@ def export_process_graph():
 
 # --- 5. CORE LOGIC (Anomaly Detection) ---
 def on_message(client, userdata, msg):
+    """
+    MQTT callback function executed upon receiving a new telemetry message.
+
+    Parses the incoming JSON payload and evaluates it against four threat vectors:
+    Flooding (DoS), Replay Attacks, Markov State Tampering, and AI Data Injection.
+    Constructs an updated security state payload and publishes it to the cloud broker.
+
+    :param client: The MQTT client instance for this callback.
+    :type client: paho.mqtt.client.Client
+    :param userdata: The private user data as set in Client() or user_data_set().
+    :type userdata: Any
+    :param msg: An instance of MQTTMessage containing the topic, qos, and payload.
+    :type msg: paho.mqtt.client.MQTTMessage
+    """
     global prev_state, last_seq, last_msg_time, model, event_records
     
     arrival_time = time.time()
@@ -109,6 +150,7 @@ def on_message(client, userdata, msg):
             "activity": state_label, 
             "timestamp": pd.to_datetime(arrival_time, unit='s')
         })
+        
         # --- A. DOS DETECTION (FLOODING) ---
         if time_diff < FLOOD_THRESHOLD:
             print(f"🚨 ALERT [DoS/Flooding]")
@@ -116,7 +158,7 @@ def on_message(client, userdata, msg):
         last_msg_time = arrival_time
 
         # --- B. REPLAY ATTACK DETECTION ---
-        # Check Replay only if there's NO flooding to avoid false positives
+        # Check Replay only if there is NO flooding active to avoid false positives
         if not alarms["flood"] and current_seq != -1:
             if current_seq == 0:
                 last_seq = 0
@@ -126,7 +168,7 @@ def on_message(client, userdata, msg):
             else:
                 last_seq = current_seq
         elif alarms["flood"]:
-            # Update max seen during flood to avoid blocking
+            # Update max sequence seen during flood to avoid blocking future messages
             last_seq = max(last_seq, current_seq)
 
         # C. MARKOV ANALYSIS
@@ -141,10 +183,10 @@ def on_message(client, userdata, msg):
         current_reading = np.array([[temp, hum]])
         score = model.decision_function(current_reading)
         
-        # Anomaly threshold: < 0.0
+        # Anomaly threshold: Score < 0.0 indicates an anomaly
         ai_anomaly = score[0] < 0.0 
 
-        # Golden Rule: Out of physical bounds is an anomaly
+        # Golden Rule: If data is outside strict physical bounds, flag as anomaly
         out_of_bounds = (temp < NORMAL_TEMP_RANGE[0] or temp > NORMAL_TEMP_RANGE[1] or 
                          hum < NORMAL_HUM_RANGE[0] or hum > NORMAL_HUM_RANGE[1])
 
@@ -169,7 +211,7 @@ def on_message(client, userdata, msg):
         cloud_dashboard_client.publish(DASHBOARD_TOPIC, json.dumps(db_payload), qos=0)
         
         if not is_anomalous:
-            print(f"✅ Normal: T={temp}, H={hum} sent to the dashboard")
+            print(f"✅ Normal: T={temp}, H={hum} sent to the dashboard.")
                 
     except Exception as e:
         print(f"❌ Error processing message: {e}")

@@ -1,3 +1,11 @@
+"""
+IoT Attack Control Center.
+
+This Streamlit application provides a user interface to simulate various
+cyberattacks (Data Injection, Flooding, Markov Process Tampering, and Replay Attacks)
+against an IoT edge node running an anomaly detection system.
+"""
+
 import streamlit as st
 import paho.mqtt.client as mqtt
 import json
@@ -11,7 +19,20 @@ DEFAULT_TOPIC = "device_1/telemetry"
 
 # --- HELPER FUNCTIONS ---
 def publish_message(broker, topic, payload, qos=1):
-    """Handles the MQTT connection and publishing."""
+    """
+    Handles the MQTT connection and publishing of a payload.
+
+    :param broker: The IP address or hostname of the MQTT broker.
+    :type broker: str
+    :param topic: The MQTT topic to publish the message to.
+    :type topic: str
+    :param payload: The data dictionary to send (will be serialized to JSON).
+    :type payload: dict
+    :param qos: Quality of Service level for the MQTT message (default is 1).
+    :type qos: int
+    :return: True if the message was successfully published, False otherwise.
+    :rtype: bool
+    """
     try:
         client = mqtt.Client(callback_api_version=mqtt.CallbackAPIVersion.VERSION2)
         client.connect(broker, 1883)
@@ -91,7 +112,7 @@ with attack_tab[1]:
                 status_text.text(f"Sent {i + 1}/{flood_count} messages...")
                 
             client.disconnect()
-            st.success("✅ Flood complete. Check ThingsBoard/RPi logs for DoS alerts.")
+            st.success("✅ Flood complete. Check Cloud Dashboard/RPi logs for DoS alerts.")
         except Exception as e:
             st.error(f"Error during flood: {e}")
 

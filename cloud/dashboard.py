@@ -1,3 +1,11 @@
+"""
+IoT Security SOC Dashboard.
+
+This Streamlit application acts as the Security Operations Center (SOC) monitor.
+It subscribes to a public cloud MQTT broker (EMQX) to receive real-time telemetry and
+anomaly alerts from the edge node, displaying them in an interactive web interface.
+"""
+
 import streamlit as st
 import paho.mqtt.client as mqtt
 import json
@@ -6,6 +14,7 @@ import pandas as pd
 from datetime import datetime
 from streamlit_autorefresh import st_autorefresh
 import queue
+import pytz
 
 # --- PAGE CONFIG ---
 st.set_page_config(page_title="IoT Security SOC", page_icon="🛡️", layout="wide")
@@ -13,10 +22,19 @@ st.set_page_config(page_title="IoT Security SOC", page_icon="🛡️", layout="w
 # Refresh the page every 1 second
 st_autorefresh(interval=1000, key="data_refresh")
 
+# Local Timezone Setup (Crucial for Streamlit Cloud deployment)
+LOCAL_TZ = pytz.timezone("Europe/Madrid")
+
 # --- THREAD-SAFE COMMUNICATION ---
-# Use a queue to safely pass messages from the background MQTT thread to the Streamlit UI thread
 @st.cache_resource
 def get_message_queue():
+    """
+    Creates a thread-safe queue to pass messages from the background MQTT thread
+    to the main Streamlit UI thread.
+    
+    :return: A synchronized queue instance.
+    :rtype: queue.Queue
+    """
     return queue.Queue()
 
 msg_queue = get_message_queue()
@@ -37,19 +55,29 @@ if 'alarms_log' not in st.session_state:
 
 # --- BACKGROUND MQTT CLIENT ---
 def on_message(client, userdata, msg):
+    """
+    MQTT callback function triggered when a new message arrives from the cloud broker.
+    It decodes the JSON payload and safely places it into the processing queue.
+    """
     try:
         payload = json.loads(msg.payload.decode())
-        # Put the payload in the queue instead of touching st.session_state directly
         get_message_queue().put(payload)
     except Exception as e:
         print(f"Error decoding message: {e}")
 
 @st.cache_resource
 def start_mqtt_subscriber():
+    """
+    Initializes and starts a background daemon thread that continuously listens
+    to the public EMQX MQTT broker for incoming telemetry and alert data.
+    
+    :return: The configured MQTT client instance.
+    :rtype: paho.mqtt.client.Client
+    """
     client = mqtt.Client(callback_api_version=mqtt.CallbackAPIVersion.VERSION2)
     client.on_message = on_message
     
-    # CONNECT TO THE PUBLIC CLOUD BROKER
+    # Connect to the public cloud broker
     client.connect("broker.emqx.io", 1883)
     client.subscribe("ad_iot/group_c/device_1/dashboard") 
     
@@ -67,9 +95,9 @@ while not msg_queue.empty():
     # 1. Update current metrics
     st.session_state.current_data = payload
     
-    # 2. Append to historical chart data
+    # 2. Append to historical chart data (Using local timezone)
     new_row = pd.DataFrame([{
-        'Time': datetime.now(), 
+        'Time': datetime.now(LOCAL_TZ), 
         'Temperature': payload.get('temperature', 0), 
         'Humidity': payload.get('humidity', 0)
     }])
@@ -93,7 +121,7 @@ while not msg_queue.empty():
     for key, alarm_name in alarms_map.items():
         if payload.get(key):
             st.session_state.alarms_log.insert(0, {
-                "Timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                "Timestamp": datetime.now(LOCAL_TZ).strftime("%Y-%m-%d %H:%M:%S"),
                 "Type": alarm_name,
                 "Severity": "MAJOR",
                 "Originator": "device_1",
@@ -149,7 +177,7 @@ with left_col:
     else:
         st.info("Waiting for telemetry data to build charts...")
 
-    # 5. Alarms Table
+    # 4. Alarms Table
     st.subheader("🚨 Alarms Log")
     if st.session_state.alarms_log:
         alarms_df = pd.DataFrame(st.session_state.alarms_log)
@@ -181,7 +209,7 @@ with right_col:
     if 0 <= data['state'] <= 8:
         temp_str, hum_str = state_labels[data['state']].split("/")
         # Note the TWO SPACES before each \n to force a line break in Markdown
-        formatted_state = f"**{temp_str} Temperature**  \n**{hum_str} Humidity**  \n**State {data['state']}**"
+        formatted_state = f"**{temp_str} Temperature** \n**{hum_str} Humidity** \n**State {data['state']}**"
     else:
         formatted_state = f"**Unknown state {data['state']}**"
     
