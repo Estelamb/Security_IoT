@@ -55,9 +55,6 @@ sudo systemctl stop mosquitto
 sudo systemctl disable mosquitto
 ```
 
-### Restart Mosquitto
-sudo systemctl restart mosquitto
-
 ## 2. Virtual Environment Setup 
 
 ### Create Virtual Environment
@@ -73,10 +70,7 @@ python3 -m venv .venv_edge
 source .venv_edge/bin/activate
 
 # Install Libraries
-pip install paho-mqtt scikit-learn numpy pandas pm4py streamlit
-
-# Save Requirements
-pip freeze > requirements.txt
+pip install -r requirements.txt
 ```
 
 ## 3. Run the Anomaly Detector UI

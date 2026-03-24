@@ -19,10 +19,7 @@ python3 -m venv .venv_cloud
 source .venv_cloud/bin/activate
 
 # Install Libraries
-pip install paho-mqtt scikit-learn numpy pandas pm4py streamlit streamlit-autorefresh
-
-# Save Requirements
-pip freeze > requirements.txt
+pip install -r requirements.txt
 ```
 
 ## 2. Run the Cloud Dashboard

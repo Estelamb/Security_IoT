@@ -9,9 +9,3 @@ pip install -r requirements.txt
 
 # Run UI
 streamlit run ui_attacks.py
-
------------------------------------
-
-# Libraries
-pip install paho-mqtt
-pip freeze > requirements.txt
