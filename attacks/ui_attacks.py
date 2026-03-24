@@ -39,7 +39,15 @@ attack_tab = st.tabs(["💉 Data Injection", "🌊 Flooding (DoS)", "🧠 Markov
 
 # 1. DATA INJECTION ATTACK
 with attack_tab[0]:
-    st.markdown("Inject extreme or impossible physical values to trigger AI Anomaly bounds.")
+    st.markdown("### Data Injection (AI Evasion)")
+    st.info(
+        "**How it works:** The attacker sends physically impossible or maliciously crafted data to trick the AI model "
+        "(Isolation Forest) or trigger out-of-bounds physical rules.\n\n"
+        "**Real-world Example:** A hacker injects a fake temperature reading of 150°C into an industrial control system. "
+        "This triggers an automatic emergency shutdown of the machinery, causing a massive denial of service and financial loss.\n\n"
+        "⚠️ **Side Effects:** Depending on the last registered physical state of the sensor before you launch this attack, "
+        "the extreme jump to State 8 will likely also trigger a **Markov Tampering** alert."
+    )
     col1, col2, col3 = st.columns(3)
     with col1:
         di_temp = st.number_input("Spoofed Temperature (°C)", value=150.0, step=1.0)
@@ -55,7 +63,16 @@ with attack_tab[0]:
 
 # 2. FLOODING ATTACK
 with attack_tab[1]:
-    st.markdown("Send a massive burst of seemingly normal traffic to overwhelm the threshold.")
+    st.markdown("### Flooding (Denial of Service)")
+    st.info(
+        "**How it works:** The attacker overwhelms the MQTT broker or the edge node (RPi5) by sending a massive burst "
+        "of messages in a fraction of a second, violating the expected transmission rate (FLOOD_THRESHOLD).\n\n"
+        "**Real-world Example:** A botnet of compromised IoT cameras targets a central server, sending thousands of "
+        "MQTT packets per second. The server's CPU maxes out trying to process them, preventing legitimate sensor data "
+        "from getting through.\n\n"
+        "⚠️ **Side Effects:** None. The anomaly detector is deliberately programmed to suppress Sequence (Replay) checks "
+        "while a flood is occurring to prevent false positive chain reactions from out-of-order network packets."
+    )
     col1, col2 = st.columns(2)
     with col1:
         flood_count = st.number_input("Number of Messages", value=100, step=10)
@@ -86,7 +103,16 @@ with attack_tab[1]:
 
 # 3. MARKOV PROCESS TAMPERING
 with attack_tab[2]:
-    st.markdown("Force an impossible state transition (e.g., instant jump from Cold/Dry to Hot/Humid).")
+    st.markdown("### Markov Process Tampering")
+    st.info(
+        "**How it works:** The attacker tries to spoof data that looks normal to threshold limits, but violates the "
+        "laws of physics or logical state transitions defined by our Process Mining matrix.\n\n"
+        "**Real-world Example:** An attacker forces a sensor state to jump instantly from 'Cold/Dry' to 'Hot/Humid'. "
+        "While both states are valid on their own, physics dictates a room must pass through intermediate states "
+        "(like warming up to 'Normal') first. The Markov model catches this impossible teleportation.\n\n"
+        "⚠️ **Side Effects:** Because the target state (Hot/Humid) payload forces a humidity of 80%, it intentionally "
+        "exceeds the hardcoded physical limit of 70%. Therefore, this attack will simultaneously trigger a **Data Injection (Out of Bounds)** alert."
+    )
     col1, col2 = st.columns(2)
     with col1:
         st.write("Initial State Setup")
@@ -112,7 +138,16 @@ with attack_tab[2]:
 
 # 4. REPLAY ATTACK
 with attack_tab[3]:
-    st.markdown("Send an older sequence number to trigger replay detection.")
+    st.markdown("### Replay Attack")
+    st.info(
+        "**How it works:** The attacker intercepts a legitimate, valid payload sent by the sensor. Later, they re-transmit "
+        "(replay) that exact same payload to the broker to trick the system.\n\n"
+        "**Real-world Example:** A hacker records a 'temperature is normal' message (Sequence #10). Later, they physically "
+        "set the room on fire. While the sensor tries to send high-temperature warnings (Sequence #50), the hacker "
+        "floods the network with the old Sequence #10 message to hide the fire from the operators.\n\n"
+        "⚠️ **Side Effects:** None. The attack deliberately uses completely normal temperature, humidity, and state transitions "
+        "to ensure it exclusively trips the Sequence logic without triggering AI or Markov bounds."
+    )
     col1, col2 = st.columns(2)
     with col1:
         current_seq = st.number_input("Current Valid Sequence", value=50, step=1)

@@ -48,8 +48,10 @@ def on_message(client, userdata, msg):
 def start_mqtt_subscriber():
     client = mqtt.Client(callback_api_version=mqtt.CallbackAPIVersion.VERSION2)
     client.on_message = on_message
-    client.connect("localhost", 1883)
-    client.subscribe("device_1/dashboard") 
+    
+    # CONNECT TO THE PUBLIC CLOUD BROKER
+    client.connect("broker.emqx.io", 1883)
+    client.subscribe("ad_iot/group_c/device_1/dashboard") 
     
     thread = threading.Thread(target=client.loop_forever, daemon=True)
     thread.start()
