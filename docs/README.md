@@ -39,15 +39,16 @@ To run the complete architecture locally or in the cloud, you will need to start
    ```bash
    streamlit run app.py
    ```
-📚 Documentation
+## 📚 Documentation
 Comprehensive documentation covering the codebases, mathematical models, and deployment guides can be generated using Sphinx. Access through the next link: [Project Documentation](https://estelamb.github.io/Security_IoT/)
 
-👥 Group C
+---
+
+## 👥 Group C
 Yingying Gao
 
 Nouha Madiouni
 
 Estela Mora Barba
 
-Developed for the Security for IoT Applications course
-MIoT - 2026
+Security for IoT Applications, MIoT - 2026
