@@ -143,7 +143,6 @@ def export_process_graph():
         print(f"❌ Process Mining Error: {e}")
 
 # --- 5. CORE LOGIC (Anomaly Detection) ---
-
 def on_message(client, userdata, msg):
     """
     MQTT callback function executed upon receiving a new telemetry message.
@@ -170,36 +169,6 @@ def on_message(client, userdata, msg):
             print(f"🚨 ALERT [DoS/Flooding]")
             alarms["flood"] = True
 
-        # --- B. SEQUENCE & REPLAY ATTACK DETECTION (With Auto-Recovery) ---
-        if current_seq != -1:
-            
-            # 1. Track if the ESP32 is consistently trying to send valid, incrementing sequences
-            if current_seq == last_rejected_seq + 1 and last_rejected_seq != -1:
-                desync_counter += 1
-            else:
-                desync_counter = 0
-
-            # 2. Self-Healing: 3 valid sequences in a row means our baseline is poisoned. Resync.
-            if desync_counter >= 3:
-                print("🔄 [Auto-Recovery] Baseline corrupted. Resynchronizing sequence tracker!")
-                last_seq = current_seq - 1
-                desync_counter = 0
-
-            # 3. Standard Replay & Spoofing Checks
-            if current_seq <= last_seq and current_seq != 0 and not alarms["flood"]:
-                print(f"🚨 ALERT [Replay Attack] Seq: {current_seq} (Last: {last_seq})")
-                alarms["replay"] = True
-                last_rejected_seq = current_seq
-                
-            elif last_seq != -1 and current_seq > (last_seq + MAX_SEQ_JUMP):
-                print(f"🚨 ALERT [Sequence Spoofing] Unreal jump from {last_seq} to {current_seq}")
-                alarms["replay"] = True
-                last_rejected_seq = current_seq
-                
-            else:
-                # Sequence is normal, clear the tracking memory
-                last_rejected_seq = -1
-
         # --- C. MARKOV ANALYSIS ---
         if prev_state != -1 and current_state != -1:
             if transition_matrix[prev_state][current_state] == 0:
@@ -218,6 +187,39 @@ def on_message(client, userdata, msg):
         if ai_anomaly or out_of_bounds:
             print(f"🚨 ALERT [Data Injection/Out of Range] Score: {score[0]:.4f}")
             alarms["di"] = True
+
+        # --- B. SEQUENCE & REPLAY ATTACK DETECTION (Moved to the end) ---
+        if current_seq != -1:
+            # SHIELD: Only allow sequence tracking if the payload passed all other physical/speed checks
+            if alarms["flood"] or alarms["markov"] or alarms["di"]:
+                pass # Prevent attacker from hijacking sequence memory
+            else:
+                # 1. Track if the ESP32 is consistently trying to send valid, incrementing sequences
+                if current_seq == last_rejected_seq + 1 and last_rejected_seq != -1:
+                    desync_counter += 1
+                else:
+                    desync_counter = 0
+
+                # 2. Self-Healing: 3 valid sequences in a row means our baseline is poisoned. Resync.
+                if desync_counter >= 3:
+                    print("🔄 [Auto-Recovery] Baseline corrupted. Resynchronizing sequence tracker!")
+                    last_seq = current_seq - 1
+                    desync_counter = 0
+
+                # 3. Standard Replay & Spoofing Checks
+                if current_seq <= last_seq and current_seq != 0:
+                    print(f"🚨 ALERT [Replay Attack] Seq: {current_seq} (Last: {last_seq})")
+                    alarms["replay"] = True
+                    last_rejected_seq = current_seq
+                    
+                elif last_seq != -1 and current_seq > (last_seq + MAX_SEQ_JUMP):
+                    print(f"🚨 ALERT [Sequence Spoofing] Unreal jump from {last_seq} to {current_seq}")
+                    alarms["replay"] = True
+                    last_rejected_seq = current_seq
+                    
+                else:
+                    # Sequence is normal, clear the tracking memory
+                    last_rejected_seq = -1
 
         is_anomalous = any(alarms.values())
 
