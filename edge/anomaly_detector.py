@@ -19,32 +19,19 @@ from pm4py.objects.log.util import dataframe_utils
 # --- 1. CONFIGURATION ---
 
 LOCAL_BROKER = "localhost"
-"""str: The hostname or IP of the local Mosquitto broker running on the Raspberry Pi 5."""
-
 LOCAL_TOPIC = "device_1/telemetry"
-"""str: The local MQTT topic where the ESP32 edge node publishes its sensor data."""
-
 DASHBOARD_BROKER = "broker.emqx.io"
-"""str: The public cloud MQTT broker used to forward processed data to the Streamlit UI."""
-
 DASHBOARD_TOPIC = "ad_iot/group_c/device_1/dashboard"
-"""str: The cloud MQTT topic the Streamlit dashboard subscribes to."""
 
 MAX_SEQ_JUMP = 10
-"""int: Maximum allowed gap between sequence numbers to prevent sequence spoofing."""
 
 cloud_dashboard_client = mqtt.Client(callback_api_version=mqtt.CallbackAPIVersion.VERSION2)
 cloud_dashboard_client.connect(DASHBOARD_BROKER, 1883)
 cloud_dashboard_client.loop_start()
 
 FLOOD_THRESHOLD = 0.5 
-"""float: Minimum allowed time (in seconds) between incoming messages to avoid triggering a DoS alert."""
-
 NORMAL_TEMP_RANGE = (15, 35)
-"""tuple of int: The physical safe bounds for temperature in degrees Celsius."""
-
 NORMAL_HUM_RANGE = (30, 70)
-"""tuple of int: The physical safe bounds for relative humidity percentages."""
 
 STATE_NAMES = {
     0: "Cold_Dry",
@@ -57,40 +44,26 @@ STATE_NAMES = {
     7: "Hot_Normal",
     8: "Hot_Humid"
 }
-"""dict: Maps the calculated 0-8 integer state to a human-readable string for Process Mining logs."""
 
 # --- 2. MARKOV MODEL SETUP (9 States) ---
 
 transition_matrix = np.eye(9) * 0.8 + 0.025
-"""numpy.ndarray: A 9x9 transition matrix representing the probability of moving from one physical state to another."""
-
-# DEFINE IMPOSSIBLE JUMPS (Extreme to Extreme)
 
 # Cannot jump directly from Cold (0,1,2) to Hot (6,7,8)
 for c in [0, 1, 2]:
     for h in [6, 7, 8]:
-        transition_matrix[c][h] = 0.0 # Cold to Hot
-        transition_matrix[h][c] = 0.0 # Hot to Cold
+        transition_matrix[c][h] = 0.0 
+        transition_matrix[h][c] = 0.0 
 
 # Cannot jump directly from Dry (0,3,6) to Humid (2,5,8)
 for d in [0, 3, 6]:
     for hu in [2, 5, 8]:
-        transition_matrix[d][hu] = 0.0 # Dry to Humid
-        transition_matrix[hu][d] = 0.0 # Humid to Dry
+        transition_matrix[d][hu] = 0.0 
+        transition_matrix[hu][d] = 0.0 
         
 # --- 3. AI INITIALIZATION (Isolation Forest) ---
 
 def generate_reference_model():
-    """
-    Generates and trains the baseline AI anomaly detection model.
-
-    Creates synthetic reference data representing normal operating conditions based on
-    the predefined physical boundaries (NORMAL_TEMP_RANGE and NORMAL_HUM_RANGE).
-    It then fits an Isolation Forest model to establish the anomaly decision boundaries.
-
-    :return: A trained Machine Learning model for anomaly scoring.
-    :rtype: sklearn.ensemble.IsolationForest
-    """
     print("⚙️ Generating professional reference model...")
     t_samples = np.random.uniform(NORMAL_TEMP_RANGE[0], NORMAL_TEMP_RANGE[1], 200)
     h_samples = np.random.uniform(NORMAL_HUM_RANGE[0], NORMAL_HUM_RANGE[1], 200)
@@ -104,30 +77,15 @@ model = generate_reference_model()
 # --- 4. STATE TRACKING & PROCESS MINING ---
 
 event_records = []
-"""list of dict: Stores a history of state transitions for PM4Py Process Mining."""
-
 last_seq = -1
-"""int: Tracks the last seen sequence number to detect Replay Attacks."""
-
 prev_state = -1
-"""int: Tracks the previously recorded physical state (0-8) to validate Markov transitions."""
-
 last_msg_time = time.time()
-"""float: Unix timestamp of the last received message to calculate transmission speed (Flooding)."""
-
 last_normal_time = time.time()
-"""float: Unix timestamp of the last perfectly normal payload to calculate auto-recovery."""
+
+# SHADOW TRACKER: Isolates the attacker's logic from the real device
+spoofed_state = -1 
 
 def export_process_graph():
-    """
-    Exports the current Process Mining data as a visual graph.
-
-    Converts the stored ``event_records`` into a pandas DataFrame, processes it
-    with the pm4py library, and saves a Directly-Follows Graph (DFG) as a PNG image 
-    (``process_map.png``). Requires at least 10 logged events to trigger generation.
-
-    :raises Exception: Catches and logs any errors during graph generation to prevent edge node crashes.
-    """
     if len(event_records) < 10: return
     try:
         df = pd.DataFrame(event_records)
@@ -142,12 +100,8 @@ def export_process_graph():
 # --- 5. CORE LOGIC (Anomaly Detection) ---
 
 def on_message(client, userdata, msg):
-    """
-    MQTT callback function executed upon receiving a new telemetry message.
-    Uses a Time-Based Deadman Switch for guaranteed Auto-Recovery.
-    """
     global prev_state, last_seq, last_msg_time, model, event_records
-    global last_normal_time
+    global last_normal_time, spoofed_state
     
     arrival_time = time.time()
     time_diff = arrival_time - last_msg_time
@@ -167,14 +121,30 @@ def on_message(client, userdata, msg):
             print(f"🚨 ALERT [DoS/Flooding]")
             alarms["flood"] = True
 
-        # --- B. MARKOV ANALYSIS ---
-        if prev_state != -1 and current_state != -1:
-            if transition_matrix[prev_state][current_state] == 0:
+        # --- B. SEQUENCE & REPLAY TRACKING ---
+        is_spoof = False
+        if current_seq != -1:
+            if current_seq <= last_seq and current_seq != 0:
+                print(f"🚨 ALERT [Replay Attack] Seq: {current_seq} (Last: {last_seq})")
+                alarms["replay"] = True
+                is_spoof = True
+            elif last_seq != -1 and current_seq > (last_seq + MAX_SEQ_JUMP):
+                print(f"🚨 ALERT [Sequence Spoofing] Unreal jump from {last_seq} to {current_seq}")
+                alarms["replay"] = True
+                is_spoof = True
+
+        # --- C. MARKOV ANALYSIS (Shadow Evaluator) ---
+        # If it is a spoofed packet, evaluate against the attacker's shadow state. 
+        # Otherwise, evaluate against the real ESP32 state.
+        eval_state = spoofed_state if is_spoof else prev_state
+        
+        if eval_state != -1 and current_state != -1:
+            if transition_matrix[eval_state][current_state] == 0:
                 print(f"🚨 ALERT [Markov Impossible Jump]")
                 alarms["markov"] = True
                 export_process_graph()
 
-        # --- C. IMMEDIATE AI DETECTION ---
+        # --- D. IMMEDIATE AI DETECTION ---
         current_reading = np.array([[temp, hum]])
         score = model.decision_function(current_reading)
         
@@ -186,26 +156,15 @@ def on_message(client, userdata, msg):
             print(f"🚨 ALERT [Data Injection/Out of Range] Score: {score[0]:.4f}")
             alarms["di"] = True
 
-        # --- D. SEQUENCE & REPLAY TRACKING ---
-        if current_seq != -1:
-            if current_seq <= last_seq and current_seq != 0:
-                print(f"🚨 ALERT [Replay Attack] Seq: {current_seq} (Last: {last_seq})")
-                alarms["replay"] = True
-            elif last_seq != -1 and current_seq > (last_seq + MAX_SEQ_JUMP):
-                print(f"🚨 ALERT [Sequence Spoofing] Unreal jump from {last_seq} to {current_seq}")
-                alarms["replay"] = True
-
-        # --- E. TIME-BASED AUTO-RECOVERY (The Deadman Switch) ---
-        # 1. Is the payload physically safe? (No Flood, DI, or Markov)
+        # --- E. TIME-BASED AUTO-RECOVERY ---
         is_physically_safe = not (alarms["flood"] or alarms["markov"] or alarms["di"])
-        
-        # 2. If it is safe but flagged as a Replay, check how long we have been stuck
         if alarms["replay"] and is_physically_safe:
             time_stuck = arrival_time - last_normal_time
-            if time_stuck > 12.0:  # 12 seconds easily covers two 5-second ESP broadcasts
+            if time_stuck > 12.0:  
                 print(f"🔄 [Auto-Recovery] Stuck for {time_stuck:.1f}s. Trusting new sequence!")
                 alarms["replay"] = False
-                last_seq = current_seq - 1 # Reset the tracker to adopt this new sequence
+                is_spoof = False
+                last_seq = current_seq - 1 
 
         is_anomalous = any(alarms.values())
 
@@ -213,7 +172,7 @@ def on_message(client, userdata, msg):
         if not is_anomalous:
             last_seq = current_seq
             prev_state = current_state
-            last_normal_time = arrival_time # Update our "last good packet" timer
+            last_normal_time = arrival_time 
             
             event_records.append({
                 "case_id": "device_1", 
@@ -223,6 +182,9 @@ def on_message(client, userdata, msg):
             print(f"✅ Normal: T={temp}, H={hum}, Seq={current_seq} sent to dashboard.")
         else:
             print(f"🛡️ State Protected: Dropping malicious payload from memory.")
+            # If the payload was a spoof/replay, update the attacker's shadow tracker
+            if is_spoof:
+                spoofed_state = current_state
 
         last_msg_time = arrival_time
 
