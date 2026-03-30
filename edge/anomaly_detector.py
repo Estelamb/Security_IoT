@@ -115,6 +115,12 @@ prev_state = -1
 last_msg_time = time.time()
 """float: Unix timestamp of the last received message to calculate transmission speed (Flooding)."""
 
+last_rejected_seq = -1
+"""int: Tracks the last blocked sequence to identify if the real device is trying to recover."""
+
+desync_counter = 0
+"""int: Counts consecutive logically incrementing sequences that were blocked."""
+
 def export_process_graph():
     """
     Exports the current Process Mining data as a visual graph.
@@ -141,10 +147,10 @@ def export_process_graph():
 def on_message(client, userdata, msg):
     """
     MQTT callback function executed upon receiving a new telemetry message.
-    Includes State Protection: Malicious payloads are evaluated but are NOT allowed
-    to update the baseline sequence or state trackers.
+    Includes State Protection and Auto-Recovery to prevent permanent lockouts.
     """
     global prev_state, last_seq, last_msg_time, model, event_records
+    global last_rejected_seq, desync_counter
     
     arrival_time = time.time()
     time_diff = arrival_time - last_msg_time
@@ -157,7 +163,6 @@ def on_message(client, userdata, msg):
         current_state = payload.get("state", -1)
         state_label = STATE_NAMES.get(current_state, f"State_{current_state}")
 
-        # Initial Alarm flags
         alarms = {"flood": False, "replay": False, "markov": False, "di": False}
         
         # --- A. DOS DETECTION (FLOODING) ---
@@ -165,17 +170,35 @@ def on_message(client, userdata, msg):
             print(f"🚨 ALERT [DoS/Flooding]")
             alarms["flood"] = True
 
-        # --- B. SEQUENCE & REPLAY ATTACK DETECTION ---
+        # --- B. SEQUENCE & REPLAY ATTACK DETECTION (With Auto-Recovery) ---
         if current_seq != -1:
-            # Check 1: Did the sequence go backwards? (Replay)
+            
+            # 1. Track if the ESP32 is consistently trying to send valid, incrementing sequences
+            if current_seq == last_rejected_seq + 1 and last_rejected_seq != -1:
+                desync_counter += 1
+            else:
+                desync_counter = 0
+
+            # 2. Self-Healing: 3 valid sequences in a row means our baseline is poisoned. Resync.
+            if desync_counter >= 3:
+                print("🔄 [Auto-Recovery] Baseline corrupted. Resynchronizing sequence tracker!")
+                last_seq = current_seq - 1
+                desync_counter = 0
+
+            # 3. Standard Replay & Spoofing Checks
             if current_seq <= last_seq and current_seq != 0 and not alarms["flood"]:
                 print(f"🚨 ALERT [Replay Attack] Seq: {current_seq} (Last: {last_seq})")
                 alarms["replay"] = True
-            
-            # Check 2: Did the sequence jump too far forward? (Spoofing/Trojan)
+                last_rejected_seq = current_seq
+                
             elif last_seq != -1 and current_seq > (last_seq + MAX_SEQ_JUMP):
                 print(f"🚨 ALERT [Sequence Spoofing] Unreal jump from {last_seq} to {current_seq}")
                 alarms["replay"] = True
+                last_rejected_seq = current_seq
+                
+            else:
+                # Sequence is normal, clear the tracking memory
+                last_rejected_seq = -1
 
         # --- C. MARKOV ANALYSIS ---
         if prev_state != -1 and current_state != -1:
@@ -198,14 +221,11 @@ def on_message(client, userdata, msg):
 
         is_anomalous = any(alarms.values())
 
-        # --- THE FIX: STATE & MEMORY PROTECTION ---
-        # Only update the sequence and physical state memory if the message is 100% clean.
-        # This prevents attacker payloads from poisoning the baseline memory.
+        # --- STATE & MEMORY PROTECTION ---
         if not is_anomalous:
             last_seq = current_seq
             prev_state = current_state
             
-            # Only log valid transitions to Process Mining to avoid corrupting the graph
             event_records.append({
                 "case_id": "device_1", 
                 "activity": state_label, 
@@ -213,9 +233,8 @@ def on_message(client, userdata, msg):
             })
             print(f"✅ Normal: T={temp}, H={hum}, Seq={current_seq} sent to dashboard.")
         else:
-            print(f"🛡️ State Protected: Dropping malicious payload from sequence memory.")
+            print(f"🛡️ State Protected: Dropping malicious payload from memory.")
 
-        # The flood timer must always update, regardless of whether the packet was malicious
         last_msg_time = arrival_time
 
         # --- SEND TO CLOUD DASHBOARD ---
