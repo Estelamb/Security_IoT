@@ -22,9 +22,6 @@ st_autorefresh(interval=1000, key="data_refresh")
 
 # Local Timezone Setup (Crucial for Streamlit Cloud deployment)
 LOCAL_TZ = pytz.timezone("Europe/Madrid")
-"""
-pytz.tzinfo.BaseTzInfo: Local timezone configuration to ensure accurate UI timestamps, especially when hosted on UTC cloud servers.
-"""
 
 # --- THREAD-SAFE COMMUNICATION ---
 @st.cache_resource
@@ -39,9 +36,6 @@ def get_message_queue():
     return queue.Queue()
 
 msg_queue = get_message_queue()
-"""
-queue.Queue: Global thread-safe queue used to safely transfer decoded MQTT payloads to the Streamlit session state.
-"""
 
 # --- INITIALIZE SESSION STATE ---
 if 'current_data' not in st.session_state:
