@@ -146,10 +146,10 @@ def export_process_graph():
 def on_message(client, userdata, msg):
     """
     MQTT callback function executed upon receiving a new telemetry message.
-    Includes State Protection and Relaxed Auto-Recovery to prevent permanent lockouts.
+    Includes Bulletproof Auto-Recovery based on physical trust.
     """
     global prev_state, last_seq, last_msg_time, model, event_records
-    global last_rejected_seq, desync_counter
+    global desync_counter # last_rejected_seq is no longer needed
     
     arrival_time = time.time()
     time_diff = arrival_time - last_msg_time
@@ -188,38 +188,32 @@ def on_message(client, userdata, msg):
             print(f"🚨 ALERT [Data Injection/Out of Range] Score: {score[0]:.4f}")
             alarms["di"] = True
 
-        # --- B. SEQUENCE & REPLAY ATTACK DETECTION ---
+        # --- B. BULLETPROOF SEQUENCE & REPLAY TRACKING ---
         if current_seq != -1:
-            # SHIELD: Do not track sequences from payloads that violate physics or speed limits
+            # SHIELD: If the payload is physically malicious, reset the trust counter immediately.
             if alarms["flood"] or alarms["markov"] or alarms["di"]:
-                pass 
+                desync_counter = 0 
             else:
-                # 1. RELAXED AUTO-RECOVERY: Allow skipped numbers due to MQTT packet drops
-                if last_rejected_seq != -1 and current_seq > last_rejected_seq:
-                    desync_counter += 1
-                else:
-                    desync_counter = 0
-
-                # 2. Self-Healing: If we see 3 forward-moving sequences, trust the real device
-                if desync_counter >= 3:
-                    print("🔄 [Auto-Recovery] Real device detected. Resynchronizing sequence tracker!")
-                    last_seq = current_seq - 1
-                    desync_counter = 0
-
-                # 3. Standard Replay & Spoofing Checks
+                # Packet is physically safe. Now check the sequence:
                 if current_seq <= last_seq and current_seq != 0:
                     print(f"🚨 ALERT [Replay Attack] Seq: {current_seq} (Last: {last_seq})")
                     alarms["replay"] = True
-                    last_rejected_seq = current_seq
+                    desync_counter += 1
                     
                 elif last_seq != -1 and current_seq > (last_seq + MAX_SEQ_JUMP):
                     print(f"🚨 ALERT [Sequence Spoofing] Unreal jump from {last_seq} to {current_seq}")
                     alarms["replay"] = True
-                    last_rejected_seq = current_seq
+                    desync_counter += 1
                     
                 else:
-                    # Valid sequence, clear tracking memory
-                    last_rejected_seq = -1
+                    # Perfect packet. Clear the trust counter.
+                    desync_counter = 0
+
+                # SELF-HEALING: 3 safe packets means the real device is back. Forgive the sequence.
+                if desync_counter >= 3:
+                    print("🔄 [Auto-Recovery] Real device verified. Wiping attacker's sequence memory!")
+                    alarms["replay"] = False # Override the replay alarm for this specific packet
+                    last_seq = current_seq - 1 # Resync memory to the real device
                     desync_counter = 0
 
         is_anomalous = any(alarms.values())
