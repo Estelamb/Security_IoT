@@ -115,11 +115,8 @@ prev_state = -1
 last_msg_time = time.time()
 """float: Unix timestamp of the last received message to calculate transmission speed (Flooding)."""
 
-last_rejected_seq = -1
-"""int: Tracks the last blocked sequence to identify if the real device is trying to recover."""
-
-desync_counter = 0
-"""int: Counts consecutive logically incrementing sequences that were blocked."""
+last_normal_time = time.time()
+"""float: Unix timestamp of the last perfectly normal payload to calculate auto-recovery."""
 
 def export_process_graph():
     """
@@ -143,13 +140,14 @@ def export_process_graph():
         print(f"❌ Process Mining Error: {e}")
 
 # --- 5. CORE LOGIC (Anomaly Detection) ---
+
 def on_message(client, userdata, msg):
     """
     MQTT callback function executed upon receiving a new telemetry message.
-    Includes Bulletproof Auto-Recovery based on physical trust.
+    Uses a Time-Based Deadman Switch for guaranteed Auto-Recovery.
     """
     global prev_state, last_seq, last_msg_time, model, event_records
-    global desync_counter # last_rejected_seq is no longer needed
+    global last_normal_time
     
     arrival_time = time.time()
     time_diff = arrival_time - last_msg_time
@@ -169,14 +167,14 @@ def on_message(client, userdata, msg):
             print(f"🚨 ALERT [DoS/Flooding]")
             alarms["flood"] = True
 
-        # --- C. MARKOV ANALYSIS ---
+        # --- B. MARKOV ANALYSIS ---
         if prev_state != -1 and current_state != -1:
             if transition_matrix[prev_state][current_state] == 0:
                 print(f"🚨 ALERT [Markov Impossible Jump]")
                 alarms["markov"] = True
                 export_process_graph()
 
-        # --- D. IMMEDIATE AI DETECTION ---
+        # --- C. IMMEDIATE AI DETECTION ---
         current_reading = np.array([[temp, hum]])
         score = model.decision_function(current_reading)
         
@@ -188,40 +186,34 @@ def on_message(client, userdata, msg):
             print(f"🚨 ALERT [Data Injection/Out of Range] Score: {score[0]:.4f}")
             alarms["di"] = True
 
-        # --- B. BULLETPROOF SEQUENCE & REPLAY TRACKING ---
+        # --- D. SEQUENCE & REPLAY TRACKING ---
         if current_seq != -1:
-            # SHIELD: If the payload is physically malicious, reset the trust counter immediately.
-            if alarms["flood"] or alarms["markov"] or alarms["di"]:
-                desync_counter = 0 
-            else:
-                # Packet is physically safe. Now check the sequence:
-                if current_seq <= last_seq and current_seq != 0:
-                    print(f"🚨 ALERT [Replay Attack] Seq: {current_seq} (Last: {last_seq})")
-                    alarms["replay"] = True
-                    desync_counter += 1
-                    
-                elif last_seq != -1 and current_seq > (last_seq + MAX_SEQ_JUMP):
-                    print(f"🚨 ALERT [Sequence Spoofing] Unreal jump from {last_seq} to {current_seq}")
-                    alarms["replay"] = True
-                    desync_counter += 1
-                    
-                else:
-                    # Perfect packet. Clear the trust counter.
-                    desync_counter = 0
+            if current_seq <= last_seq and current_seq != 0:
+                print(f"🚨 ALERT [Replay Attack] Seq: {current_seq} (Last: {last_seq})")
+                alarms["replay"] = True
+            elif last_seq != -1 and current_seq > (last_seq + MAX_SEQ_JUMP):
+                print(f"🚨 ALERT [Sequence Spoofing] Unreal jump from {last_seq} to {current_seq}")
+                alarms["replay"] = True
 
-                # SELF-HEALING: 3 safe packets means the real device is back. Forgive the sequence.
-                if desync_counter >= 3:
-                    print("🔄 [Auto-Recovery] Real device verified. Wiping attacker's sequence memory!")
-                    alarms["replay"] = False # Override the replay alarm for this specific packet
-                    last_seq = current_seq - 1 # Resync memory to the real device
-                    desync_counter = 0
+        # --- E. TIME-BASED AUTO-RECOVERY (The Deadman Switch) ---
+        # 1. Is the payload physically safe? (No Flood, DI, or Markov)
+        is_physically_safe = not (alarms["flood"] or alarms["markov"] or alarms["di"])
+        
+        # 2. If it is safe but flagged as a Replay, check how long we have been stuck
+        if alarms["replay"] and is_physically_safe:
+            time_stuck = arrival_time - last_normal_time
+            if time_stuck > 12.0:  # 12 seconds easily covers two 5-second ESP broadcasts
+                print(f"🔄 [Auto-Recovery] Stuck for {time_stuck:.1f}s. Trusting new sequence!")
+                alarms["replay"] = False
+                last_seq = current_seq - 1 # Reset the tracker to adopt this new sequence
 
         is_anomalous = any(alarms.values())
 
-        # --- STATE & MEMORY PROTECTION ---
+        # --- F. STATE & MEMORY PROTECTION ---
         if not is_anomalous:
             last_seq = current_seq
             prev_state = current_state
+            last_normal_time = arrival_time # Update our "last good packet" timer
             
             event_records.append({
                 "case_id": "device_1", 
@@ -251,7 +243,7 @@ def on_message(client, userdata, msg):
                 
     except Exception as e:
         print(f"❌ Error processing message: {e}")
-        
+
 # --- 6. LOCAL SUBSCRIBER ---
 if __name__ == "__main__":
     local_client = mqtt.Client(callback_api_version=mqtt.CallbackAPIVersion.VERSION2)
