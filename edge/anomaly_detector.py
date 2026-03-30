@@ -30,6 +30,9 @@ DASHBOARD_BROKER = "broker.emqx.io"
 DASHBOARD_TOPIC = "ad_iot/group_c/device_1/dashboard"
 """str: The cloud MQTT topic the Streamlit dashboard subscribes to."""
 
+MAX_SEQ_JUMP = 10
+"""int: Maximum allowed gap between sequence numbers to prevent sequence spoofing."""
+
 cloud_dashboard_client = mqtt.Client(callback_api_version=mqtt.CallbackAPIVersion.VERSION2)
 cloud_dashboard_client.connect(DASHBOARD_BROKER, 1883)
 cloud_dashboard_client.loop_start()
@@ -162,10 +165,16 @@ def on_message(client, userdata, msg):
             print(f"🚨 ALERT [DoS/Flooding]")
             alarms["flood"] = True
 
-        # --- B. REPLAY ATTACK DETECTION ---
+        # --- B. SEQUENCE & REPLAY ATTACK DETECTION ---
         if current_seq != -1:
+            # Check 1: Did the sequence go backwards? (Replay)
             if current_seq <= last_seq and current_seq != 0 and not alarms["flood"]:
                 print(f"🚨 ALERT [Replay Attack] Seq: {current_seq} (Last: {last_seq})")
+                alarms["replay"] = True
+            
+            # Check 2: Did the sequence jump too far forward? (Spoofing/Trojan)
+            elif last_seq != -1 and current_seq > (last_seq + MAX_SEQ_JUMP):
+                print(f"🚨 ALERT [Sequence Spoofing] Unreal jump from {last_seq} to {current_seq}")
                 alarms["replay"] = True
 
         # --- C. MARKOV ANALYSIS ---
