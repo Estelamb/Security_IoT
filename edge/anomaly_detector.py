@@ -185,23 +185,16 @@ def on_message(client, userdata, msg):
         last_msg_time = arrival_time
 
         # --- B. REPLAY ATTACK DETECTION ---
-        # Check Replay only if there is NO flooding active to avoid false positives
-        if not alarms["flood"] and current_seq != -1:
-            
-            # If the sequence goes backward (and isn't a deliberate device restart at 0)
-            if current_seq <= last_seq and current_seq != 0:
+        if current_seq != -1:
+            # Only trigger the alert if it's not a flood and not a device restart (seq 0)
+            if current_seq <= last_seq and current_seq != 0 and not alarms["flood"]:
                 print(f"🚨 ALERT [Replay Attack] Seq: {current_seq} (Last: {last_seq})")
                 alarms["replay"] = True
                 
-            # CRITICAL FIX: Unconditionally update the sequence memory to the current packet.
-            # This forces the detector to instantly "snap back" to the real sensor's timeline
-            # after a single alert, mathematically preventing a permanent loop.
+            # CRITICAL: This must happen unconditionally. 
+            # Even if a flood is happening, we must step the sequence forward 
+            # so the memory never gets trapped behind a queue backlog.
             last_seq = current_seq
-            
-        elif alarms["flood"]:
-            # During a flood, completely ignore sequence tracking. 
-            # This prevents the attacker from poisoning the last_seq memory.
-            pass
 
         # C. MARKOV ANALYSIS
         if prev_state != -1 and current_state != -1:
