@@ -169,7 +169,7 @@ def main():
         with col1:
             current_seq = st.number_input("Current Valid Sequence", value=50, step=1)
         with col2:
-            replay_seq = st.number_input("Captured Old Sequence", value=10, step=1)
+            replay_seq = st.number_input("Captured Old Sequence", value=5, step=1)
 
         if st.button("♻️ Inject Replay", use_container_width=True):
             valid_payload = {"temperature": 24.5, "humidity": 50.0, "seq": current_seq, "state": 4}
