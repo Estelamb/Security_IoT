@@ -220,8 +220,7 @@ def main():
         # Format: temp_str Temperature / hum_str Humidity / state State
         if 0 <= data['state'] <= 8:
             temp_str, hum_str = state_labels[data['state']].split("/")
-            # Note the TWO SPACES before each \n to force a line break in Markdown
-            formatted_state = f"**{temp_str} Temperature** \n**{hum_str} Humidity** \n**State {data['state']}**"
+            formatted_state = f"**{temp_str} Temperature**\n\n**{hum_str} Humidity**\n\n**State {data['state']}**"
         else:
             formatted_state = f"**Unknown state {data['state']}**"
 

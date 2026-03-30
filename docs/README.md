@@ -29,14 +29,14 @@ The testbed is capable of simulating and successfully detecting four distinct ty
 To run the complete architecture locally or in the cloud, you will need to start the components in the following order:
 
 1. **Flash the Edge Sensor:** Flash the `/device/device.ino` code to an ESP32 connected to a DHT22 sensor.
-2. **Start the Edge Node:** On your Raspberry Pi 5, navigate to the `/edge` folder, install the requirements, and run the Anomaly Detector:
+2. **Start the Edge Node:** On your Raspberry Pi 5, navigate to the `/edge` folder, install the requirements, and run the MQTT broker and Anomaly Detector:
    ```bash
-   pip install -r requirements.txt
-   python anomaly_detector.py
+   ./launch_edge.sh
    ```
 3. **Access the Cloud Dashboard:** Access through the next link: [Cloud Dashboard](https://anomaly-detection-iot-gc.streamlit.app)
-4. **Launch the Attack Center:** Navigate to the `/attacks` folder and launch the control center to begin testing:
+4. **Launch the Attack Center:** Navigate to the `/attacks` folder, activate the virtual environment, and launch the control center to begin testing:
    ```bash
+   .\.venv\Scripts\Activate.ps1
    streamlit run app.py
    ```
 ## 📚 Documentation
