@@ -138,22 +138,8 @@ def export_process_graph():
 def on_message(client, userdata, msg):
     """
     MQTT callback function executed upon receiving a new telemetry message.
-
-    Parses the incoming JSON payload and evaluates it against four independent threat vectors:
-    
-    1. **Flooding (DoS):** Checks if the time between messages is under ``FLOOD_THRESHOLD``.
-    2. **Replay Attack:** Validates that the ``seq`` number is strictly increasing.
-    3. **Markov Tampering:** Uses the ``transition_matrix`` to ensure physical states don't teleport.
-    4. **Data Injection:** Evaluates the telemetry against the ``IsolationForest`` AI and hardcoded ranges.
-
-    It finally constructs a comprehensive security state payload and publishes it to the cloud broker.
-
-    :param client: The MQTT client instance for this callback.
-    :type client: paho.mqtt.client.Client
-    :param userdata: The private user data as set in Client() or user_data_set().
-    :type userdata: Any
-    :param msg: An instance of MQTTMessage containing the topic, qos, and payload bytes.
-    :type msg: paho.mqtt.client.MQTTMessage
+    Includes State Protection: Malicious payloads are evaluated but are NOT allowed
+    to update the baseline sequence or state trackers.
     """
     global prev_state, last_seq, last_msg_time, model, event_records
     
@@ -170,48 +156,30 @@ def on_message(client, userdata, msg):
 
         # Initial Alarm flags
         alarms = {"flood": False, "replay": False, "markov": False, "di": False}
-
-        # Process Mining Logging
-        event_records.append({
-            "case_id": "device_1", 
-            "activity": state_label, 
-            "timestamp": pd.to_datetime(arrival_time, unit='s')
-        })
         
         # --- A. DOS DETECTION (FLOODING) ---
         if time_diff < FLOOD_THRESHOLD:
             print(f"🚨 ALERT [DoS/Flooding]")
             alarms["flood"] = True
-        last_msg_time = arrival_time
 
         # --- B. REPLAY ATTACK DETECTION ---
         if current_seq != -1:
-            # Only trigger the alert if it's not a flood and not a device restart (seq 0)
             if current_seq <= last_seq and current_seq != 0 and not alarms["flood"]:
                 print(f"🚨 ALERT [Replay Attack] Seq: {current_seq} (Last: {last_seq})")
                 alarms["replay"] = True
-                
-            # CRITICAL: This must happen unconditionally. 
-            # Even if a flood is happening, we must step the sequence forward 
-            # so the memory never gets trapped behind a queue backlog.
-            last_seq = current_seq
 
-        # C. MARKOV ANALYSIS
+        # --- C. MARKOV ANALYSIS ---
         if prev_state != -1 and current_state != -1:
             if transition_matrix[prev_state][current_state] == 0:
                 print(f"🚨 ALERT [Markov Impossible Jump]")
                 alarms["markov"] = True
                 export_process_graph()
-        prev_state = current_state
 
-        # D. IMMEDIATE AI DETECTION
+        # --- D. IMMEDIATE AI DETECTION ---
         current_reading = np.array([[temp, hum]])
         score = model.decision_function(current_reading)
         
-        # Anomaly threshold: Score < 0.0 indicates an anomaly
         ai_anomaly = score[0] < 0.0 
-
-        # Golden Rule: If data is outside strict physical bounds, flag as anomaly
         out_of_bounds = (temp < NORMAL_TEMP_RANGE[0] or temp > NORMAL_TEMP_RANGE[1] or 
                          hum < NORMAL_HUM_RANGE[0] or hum > NORMAL_HUM_RANGE[1])
 
@@ -219,8 +187,29 @@ def on_message(client, userdata, msg):
             print(f"🚨 ALERT [Data Injection/Out of Range] Score: {score[0]:.4f}")
             alarms["di"] = True
 
-        # --- SEND TO CLOUD DASHBOARD ---
         is_anomalous = any(alarms.values())
+
+        # --- THE FIX: STATE & MEMORY PROTECTION ---
+        # Only update the sequence and physical state memory if the message is 100% clean.
+        # This prevents attacker payloads from poisoning the baseline memory.
+        if not is_anomalous:
+            last_seq = current_seq
+            prev_state = current_state
+            
+            # Only log valid transitions to Process Mining to avoid corrupting the graph
+            event_records.append({
+                "case_id": "device_1", 
+                "activity": state_label, 
+                "timestamp": pd.to_datetime(arrival_time, unit='s')
+            })
+            print(f"✅ Normal: T={temp}, H={hum}, Seq={current_seq} sent to dashboard.")
+        else:
+            print(f"🛡️ State Protected: Dropping malicious payload from sequence memory.")
+
+        # The flood timer must always update, regardless of whether the packet was malicious
+        last_msg_time = arrival_time
+
+        # --- SEND TO CLOUD DASHBOARD ---
         db_payload = {
             "temperature": temp,
             "humidity": hum,
@@ -234,9 +223,6 @@ def on_message(client, userdata, msg):
         }
         
         cloud_dashboard_client.publish(DASHBOARD_TOPIC, json.dumps(db_payload), qos=0)
-        
-        if not is_anomalous:
-            print(f"✅ Normal: T={temp}, H={hum} sent to the dashboard.")
                 
     except Exception as e:
         print(f"❌ Error processing message: {e}")
