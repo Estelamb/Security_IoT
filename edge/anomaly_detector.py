@@ -192,11 +192,17 @@ def on_message(client, userdata, msg):
             elif current_seq <= last_seq:
                 print(f"🚨 ALERT [Replay Attack] Seq: {current_seq} (Last: {last_seq})")
                 alarms["replay"] = True
+                
+                # FIX: Resync the tracker even during an attack. 
+                # This ensures the detector auto-recovers on the next message.
+                last_seq = current_seq
             else:
                 last_seq = current_seq
+                
         elif alarms["flood"]:
-            # Update max sequence seen during flood to avoid blocking future messages
-            last_seq = max(last_seq, current_seq)
+            # FIX: Stop artificially inflating the max sequence during a flood.
+            # Just track the most recent sequence so it drops back to normal when the flood ends.
+            last_seq = current_seq
 
         # C. MARKOV ANALYSIS
         if prev_state != -1 and current_state != -1:
