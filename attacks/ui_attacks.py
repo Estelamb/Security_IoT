@@ -18,10 +18,8 @@ import time
 st.set_page_config(page_title="IoT Attack Control Center", page_icon="👾", layout="wide")
 
 DEFAULT_BROKER = "localhost"
-"""str: The default local IP address of the MQTT broker where the simulated attacks will be sent."""
 
 DEFAULT_TOPIC = "device_1/telemetry"
-"""str: The default MQTT topic that the target edge node is listening to for telemetry data."""
 
 # --- HELPER FUNCTIONS ---
 def publish_message(broker, topic, payload, qos=1):
