@@ -146,7 +146,7 @@ def export_process_graph():
 def on_message(client, userdata, msg):
     """
     MQTT callback function executed upon receiving a new telemetry message.
-    Includes State Protection and Auto-Recovery to prevent permanent lockouts.
+    Includes State Protection and Relaxed Auto-Recovery to prevent permanent lockouts.
     """
     global prev_state, last_seq, last_msg_time, model, event_records
     global last_rejected_seq, desync_counter
@@ -188,21 +188,21 @@ def on_message(client, userdata, msg):
             print(f"🚨 ALERT [Data Injection/Out of Range] Score: {score[0]:.4f}")
             alarms["di"] = True
 
-        # --- B. SEQUENCE & REPLAY ATTACK DETECTION (Moved to the end) ---
+        # --- B. SEQUENCE & REPLAY ATTACK DETECTION ---
         if current_seq != -1:
-            # SHIELD: Only allow sequence tracking if the payload passed all other physical/speed checks
+            # SHIELD: Do not track sequences from payloads that violate physics or speed limits
             if alarms["flood"] or alarms["markov"] or alarms["di"]:
-                pass # Prevent attacker from hijacking sequence memory
+                pass 
             else:
-                # 1. Track if the ESP32 is consistently trying to send valid, incrementing sequences
-                if current_seq == last_rejected_seq + 1 and last_rejected_seq != -1:
+                # 1. RELAXED AUTO-RECOVERY: Allow skipped numbers due to MQTT packet drops
+                if last_rejected_seq != -1 and current_seq > last_rejected_seq:
                     desync_counter += 1
                 else:
                     desync_counter = 0
 
-                # 2. Self-Healing: 3 valid sequences in a row means our baseline is poisoned. Resync.
+                # 2. Self-Healing: If we see 3 forward-moving sequences, trust the real device
                 if desync_counter >= 3:
-                    print("🔄 [Auto-Recovery] Baseline corrupted. Resynchronizing sequence tracker!")
+                    print("🔄 [Auto-Recovery] Real device detected. Resynchronizing sequence tracker!")
                     last_seq = current_seq - 1
                     desync_counter = 0
 
@@ -218,8 +218,9 @@ def on_message(client, userdata, msg):
                     last_rejected_seq = current_seq
                     
                 else:
-                    # Sequence is normal, clear the tracking memory
+                    # Valid sequence, clear tracking memory
                     last_rejected_seq = -1
+                    desync_counter = 0
 
         is_anomalous = any(alarms.values())
 
@@ -256,7 +257,7 @@ def on_message(client, userdata, msg):
                 
     except Exception as e:
         print(f"❌ Error processing message: {e}")
-
+        
 # --- 6. LOCAL SUBSCRIBER ---
 if __name__ == "__main__":
     local_client = mqtt.Client(callback_api_version=mqtt.CallbackAPIVersion.VERSION2)
