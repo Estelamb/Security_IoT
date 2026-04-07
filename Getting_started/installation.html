@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Installation &mdash; Anomalies Detection in IoT 1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="../_static/documentation_options.js?v=f2a433a1"></script>
+        <script src="../_static/doctools.js?v=9a2dae69"></script>
+        <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+        <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+        <script src="../_static/copybutton.js?v=f281be69"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="How to Run" href="how_to_run.html" />
+    <link rel="prev" title="Getting Started" href="../getting_started.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            Anomalies Detection in IoT
+          </a>
+              <div class="version">
+                1.0
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../getting_started.html">Getting Started</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Installation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#node-device">Node Device</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#edge-device">Edge Device</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#mqtt-broker-setup">1. MQTT Broker Setup</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#virtual-environment-setup">2. Virtual Environment Setup</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#run-the-anomaly-detector-ui">3. Run the Anomaly Detector UI</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#cloud-node">Cloud Node</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#create-a-github-repository">1. Create a GitHub Repository</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#create-a-requirements-txt-file">2. Create a requirements.txt File</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deploy-to-streamlit-cloud">3. Deploy to Streamlit Cloud</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#attacks-device">Attacks Device</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#id1">1. Virtual Environment Setup</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#run-the-attacks-ui">2. Run the Attacks UI</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="how_to_run.html">How to Run</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../modules.html">Code Documentation</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Anomalies Detection in IoT</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../getting_started.html">Getting Started</a></li>
+      <li class="breadcrumb-item active">Installation</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/Getting_started/installation.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="installation">
+<h1><a class="toc-backref" href="#id4" role="doc-backlink">Installation</a><a class="headerlink" href="#installation" title="Link to this heading"></a></h1>
+<nav class="contents" id="table-of-contents">
+<p class="topic-title">Table of Contents</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="#installation" id="id4">Installation</a></p>
+<ul>
+<li><p><a class="reference internal" href="#node-device" id="id5">Node Device</a></p></li>
+<li><p><a class="reference internal" href="#edge-device" id="id6">Edge Device</a></p></li>
+<li><p><a class="reference internal" href="#cloud-node" id="id7">Cloud Node</a></p></li>
+<li><p><a class="reference internal" href="#attacks-device" id="id8">Attacks Device</a></p></li>
+</ul>
+</li>
+</ul>
+</nav>
+<section id="node-device">
+<h2><a class="toc-backref" href="#id5" role="doc-backlink">Node Device</a><a class="headerlink" href="#node-device" title="Link to this heading"></a></h2>
+<p><strong>Directory:</strong> <code class="docutils literal notranslate"><span class="pre">device/</span></code></p>
+<p><strong>Requirements:</strong></p>
+<ul class="simple">
+<li><p>ESP32 microcontroller.</p></li>
+<li><p>DHT22 temperature and humidity sensor.</p></li>
+<li><p>Computer or laptop with Arduino IDE and required libraries installed.</p></li>
+</ul>
+<p>Setup Steps:</p>
+<ol class="arabic simple">
+<li><p>Connect the DHT22 sensor to the ESP32 microcontroller according to the following pin configuration:</p>
+<ul class="simple">
+<li><p>VCC to 3.3V</p></li>
+<li><p>GND to GND</p></li>
+<li><p>Data to D15</p></li>
+<li><p>10kΩ pull-up resistor between VCC and Data</p></li>
+</ul>
+</li>
+<li><p>Open the Arduino IDE:</p>
+<ul class="simple">
+<li><p>Install the DHT sensor library by Adafruit.</p></li>
+<li><p>Modify the provided code to include the correct Wi-Fi credentials and MQTT broker details.</p></li>
+</ul>
+</li>
+<li><p>Upload the provided code to the ESP32 microcontroller to read data from the DHT22 sensor and publish it to the MQTT broker.</p></li>
+</ol>
+</section>
+<section id="edge-device">
+<h2><a class="toc-backref" href="#id6" role="doc-backlink">Edge Device</a><a class="headerlink" href="#edge-device" title="Link to this heading"></a></h2>
+<p><strong>Directory:</strong> <code class="docutils literal notranslate"><span class="pre">edge/</span></code></p>
+<p><strong>Requirements:</strong></p>
+<ul class="simple">
+<li><p>Raspberry Pi 5 with Raspbian OS installed and configured.</p></li>
+</ul>
+<section id="mqtt-broker-setup">
+<h3>1. MQTT Broker Setup<a class="headerlink" href="#mqtt-broker-setup" title="Link to this heading"></a></h3>
+<section id="update-system">
+<h4>Update System<a class="headerlink" href="#update-system" title="Link to this heading"></a></h4>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>sudo<span class="w"> </span>apt<span class="w"> </span>update
+sudo<span class="w"> </span>apt<span class="w"> </span>upgrade<span class="w"> </span>-y
+</pre></div>
+</div>
+</section>
+<section id="install-mosquitto">
+<h4>Install Mosquitto<a class="headerlink" href="#install-mosquitto" title="Link to this heading"></a></h4>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>sudo<span class="w"> </span>apt<span class="w"> </span>install<span class="w"> </span>mosquitto<span class="w"> </span>mosquitto-clients<span class="w"> </span>-y
+</pre></div>
+</div>
+</section>
+<section id="enable-and-check-status">
+<h4>Enable and Check Status<a class="headerlink" href="#enable-and-check-status" title="Link to this heading"></a></h4>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>sudo<span class="w"> </span>systemctl<span class="w"> </span><span class="nb">enable</span><span class="w"> </span>mosquitto
+sudo<span class="w"> </span>systemctl<span class="w"> </span>status<span class="w"> </span>mosquitto
+</pre></div>
+</div>
+</section>
+<section id="configuration">
+<h4>Configuration<a class="headerlink" href="#configuration" title="Link to this heading"></a></h4>
+<ol class="arabic">
+<li><p>Open the configuration file:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>sudo<span class="w"> </span>nano<span class="w"> </span>/etc/mosquitto/conf.d/local.conf
+</pre></div>
+</div>
+</li>
+<li><p>Add the following lines:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>listener 1883
+allow_anonymous true
+</pre></div>
+</div>
+</li>
+<li><p>Press Ctrl+X, then Y, and Enter to save.</p></li>
+</ol>
+</section>
+<section id="restart-and-test">
+<h4>Restart and Test<a class="headerlink" href="#restart-and-test" title="Link to this heading"></a></h4>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Restart to apply changes</span>
+sudo<span class="w"> </span>systemctl<span class="w"> </span>restart<span class="w"> </span>mosquitto
+
+<span class="c1"># Test (Open two terminals)</span>
+<span class="c1"># Terminal 1: Subscribe</span>
+mosquitto_sub<span class="w"> </span>-h<span class="w"> </span>localhost<span class="w"> </span>-t<span class="w"> </span><span class="s2">&quot;test/topic&quot;</span>
+<span class="c1"># Terminal 2: Publish</span>
+mosquitto_pub<span class="w"> </span>-h<span class="w"> </span>localhost<span class="w"> </span>-t<span class="w"> </span><span class="s2">&quot;test/topic&quot;</span><span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;Hello World&quot;</span>
+</pre></div>
+</div>
+</section>
+<section id="stop-and-disable-mosquitto">
+<h4>Stop and Disable Mosquitto<a class="headerlink" href="#stop-and-disable-mosquitto" title="Link to this heading"></a></h4>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>sudo<span class="w"> </span>systemctl<span class="w"> </span>stop<span class="w"> </span>mosquitto
+sudo<span class="w"> </span>systemctl<span class="w"> </span>disable<span class="w"> </span>mosquitto
+</pre></div>
+</div>
+</section>
+</section>
+<section id="virtual-environment-setup">
+<h3>2. Virtual Environment Setup<a class="headerlink" href="#virtual-environment-setup" title="Link to this heading"></a></h3>
+<section id="create-virtual-environment">
+<h4>Create Virtual Environment<a class="headerlink" href="#create-virtual-environment" title="Link to this heading"></a></h4>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>sudo<span class="w"> </span>apt<span class="w"> </span>update
+sudo<span class="w"> </span>apt<span class="w"> </span>install<span class="w"> </span>graphviz<span class="w"> </span>python3-venv<span class="w"> </span>-y
+python3<span class="w"> </span>-m<span class="w"> </span>venv<span class="w"> </span>.venv_edge
+</pre></div>
+</div>
+</section>
+<section id="install-dependencies">
+<h4>Install Dependencies<a class="headerlink" href="#install-dependencies" title="Link to this heading"></a></h4>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Activate Environment</span>
+<span class="nb">source</span><span class="w"> </span>.venv_edge/bin/activate
+
+<span class="c1"># Install Libraries</span>
+pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </span>requirements.txt
+</pre></div>
+</div>
+</section>
+</section>
+<section id="run-the-anomaly-detector-ui">
+<h3>3. Run the Anomaly Detector UI<a class="headerlink" href="#run-the-anomaly-detector-ui" title="Link to this heading"></a></h3>
+<p>Ensure the MQTT broker is running and the virtual environment is activated before proceeding.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Make the launch script executable</span>
+chmod<span class="w"> </span>+x<span class="w"> </span>launch_edge.sh
+
+<span class="c1"># Run the Anomaly Detector</span>
+./launch_edge.sh
+</pre></div>
+</div>
+</section>
+</section>
+<section id="cloud-node">
+<h2><a class="toc-backref" href="#id7" role="doc-backlink">Cloud Node</a><a class="headerlink" href="#cloud-node" title="Link to this heading"></a></h2>
+<p><strong>Directory:</strong> <code class="docutils literal notranslate"><span class="pre">cloud/</span></code></p>
+<p><strong>Requirements:</strong></p>
+<ul class="simple">
+<li><p>GitHub account and project repository.</p></li>
+</ul>
+<section id="create-a-github-repository">
+<h3>1. Create a GitHub Repository<a class="headerlink" href="#create-a-github-repository" title="Link to this heading"></a></h3>
+<p>Streamlit Cloud pulls your code directly from GitHub.</p>
+<ol class="arabic simple">
+<li><p>Go to GitHub.com and create a free account (if you don’t have one).</p></li>
+<li><p>Create a new repository (you can name it something like Security_IoT).</p></li>
+<li><p>Upload your dashboard.py file to this new repository.</p></li>
+</ol>
+</section>
+<section id="create-a-requirements-txt-file">
+<h3>2. Create a requirements.txt File<a class="headerlink" href="#create-a-requirements-txt-file" title="Link to this heading"></a></h3>
+<p>When your app runs on your computer, it uses the libraries you installed via pip. When it runs in the cloud, the cloud server needs to know what to install.</p>
+<ol class="arabic">
+<li><p>In your GitHub repository, create a new file and name it requirements.txt.</p></li>
+<li><p>Paste the following text exactly as it is into that file:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>streamlit
+paho-mqtt
+pandas
+streamlit-autorefresh
+</pre></div>
+</div>
+</li>
+<li><p>Save (commit) the file.</p></li>
+</ol>
+</section>
+<section id="deploy-to-streamlit-cloud">
+<h3>3. Deploy to Streamlit Cloud<a class="headerlink" href="#deploy-to-streamlit-cloud" title="Link to this heading"></a></h3>
+<ol class="arabic simple">
+<li><p>Go to share.streamlit.io and log in using your GitHub account.</p></li>
+<li><p>Click the “New app” button.</p></li>
+<li><p>Select your repository.</p></li>
+<li><p>Set the “Main file path” to dashboard.py.</p></li>
+<li><p>Click “Deploy”.</p></li>
+</ol>
+</section>
+</section>
+<section id="attacks-device">
+<h2><a class="toc-backref" href="#id8" role="doc-backlink">Attacks Device</a><a class="headerlink" href="#attacks-device" title="Link to this heading"></a></h2>
+<p><strong>Directory:</strong> <code class="docutils literal notranslate"><span class="pre">attacks/</span></code></p>
+<p><strong>Requirements:</strong></p>
+<ul class="simple">
+<li><p>Computer or laptop with Python environment and required libraries installed.</p></li>
+</ul>
+<section id="id1">
+<h3>1. Virtual Environment Setup<a class="headerlink" href="#id1" title="Link to this heading"></a></h3>
+<section id="id2">
+<h4>Create Virtual Environment<a class="headerlink" href="#id2" title="Link to this heading"></a></h4>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>sudo<span class="w"> </span>apt<span class="w"> </span>update
+sudo<span class="w"> </span>apt<span class="w"> </span>install<span class="w"> </span>graphviz<span class="w"> </span>python3-venv<span class="w"> </span>-y
+python3<span class="w"> </span>-m<span class="w"> </span>venv<span class="w"> </span>.venv_attacks
+</pre></div>
+</div>
+</section>
+<section id="id3">
+<h4>Install Dependencies<a class="headerlink" href="#id3" title="Link to this heading"></a></h4>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Activate Environment (Linux/macOS)</span>
+<span class="nb">source</span><span class="w"> </span>.venv_attacks/bin/activate
+
+<span class="c1"># Activate Environment (Windows PowerShell)</span>
+.<span class="se">\.</span>venv_attacks<span class="se">\S</span>cripts<span class="se">\A</span>ctivate.ps1
+
+<span class="c1"># Install Libraries</span>
+pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </span>requirements.txt
+</pre></div>
+</div>
+</section>
+</section>
+<section id="run-the-attacks-ui">
+<h3>2. Run the Attacks UI<a class="headerlink" href="#run-the-attacks-ui" title="Link to this heading"></a></h3>
+<p>Ensure the virtual environment is activated before proceeding.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Run the Attacks UI</span>
+streamlit<span class="w"> </span>run<span class="w"> </span>ui_attacks.py
+</pre></div>
+</div>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="../getting_started.html" class="btn btn-neutral float-left" title="Getting Started" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="how_to_run.html" class="btn btn-neutral float-right" title="How to Run" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Group C - Yingying Gao, Nouha Madiouni, Estela Mora Barba.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Anomaly Detection Dashboard &mdash; Anomalies Detection in IoT 1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="../_static/documentation_options.js?v=f2a433a1"></script>
+        <script src="../_static/doctools.js?v=9a2dae69"></script>
+        <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+        <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+        <script src="../_static/copybutton.js?v=f281be69"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Attacks User Interface" href="../Attacks_module/dashboard_attack.html" />
+    <link rel="prev" title="Edge Node Anomaly Detector" href="../Edge_module/anomaly_detector_code.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            Anomalies Detection in IoT
+          </a>
+              <div class="version">
+                1.0
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../getting_started.html">Getting Started</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../modules.html">Code Documentation</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../modules.html#device-documentation">Device Documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../modules.html#edge-documentation">Edge Documentation</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../modules.html#cloud-documentation">Cloud Documentation</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Anomaly Detection Dashboard</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#overview">Overview</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#global-configuration-state">Global Configuration &amp; State</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#core-functions">Core Functions</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../modules.html#attacks-documentation">Attacks Documentation</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Anomalies Detection in IoT</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../modules.html">Code Documentation</a></li>
+      <li class="breadcrumb-item active">Anomaly Detection Dashboard</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/Cloud_module/dashboard_code.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="anomaly-detection-dashboard">
+<h1>Anomaly Detection Dashboard<a class="headerlink" href="#anomaly-detection-dashboard" title="Link to this heading"></a></h1>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Link to this heading"></a></h2>
+<p>This Streamlit application acts as the primary Security Operations Center (SOC) monitor for the IoT testbed. It subscribes to a public cloud MQTT broker (EMQX) to receive real-time telemetry and anomaly alerts from the edge node, displaying them in a live, interactive web interface.</p>
+<p>To prevent UI freezing and race conditions, the dashboard utilizes a multithreaded architecture. A background daemon thread handles the MQTT network traffic, safely passing decoded JSON payloads to the main Streamlit rendering thread via a synchronized message queue.</p>
+</section>
+<section id="global-configuration-state">
+<h2>Global Configuration &amp; State<a class="headerlink" href="#global-configuration-state" title="Link to this heading"></a></h2>
+<dl class="py data">
+<dt class="sig sig-object py" id="LOCAL_TZ">
+<span class="sig-name descname"><span class="pre">LOCAL_TZ</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">pytz.tzinfo.BaseTzInfo</span></em><a class="headerlink" href="#LOCAL_TZ" title="Link to this definition"></a></dt>
+<dd><p>Local timezone configuration (<code class="docutils literal notranslate"><span class="pre">&quot;Europe/Madrid&quot;</span></code>) to ensure accurate UI timestamps, especially critical when the Streamlit application is deployed on UTC cloud servers.</p>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="msg_queue">
+<span class="sig-name descname"><span class="pre">msg_queue</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">queue.Queue</span></em><a class="headerlink" href="#msg_queue" title="Link to this definition"></a></dt>
+<dd><p>A global, thread-safe queue used to safely transfer decoded MQTT payloads from the background network thread to the Streamlit session state.</p>
+</dd></dl>
+
+</section>
+<section id="core-functions">
+<h2>Core Functions<a class="headerlink" href="#core-functions" title="Link to this heading"></a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="get_message_queue">
+<span class="sig-name descname"><span class="pre">get_message_queue</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#get_message_queue" title="Link to this definition"></a></dt>
+<dd><p>Creates and caches a thread-safe queue to pass messages between the background MQTT thread and the main Streamlit UI thread.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>A synchronized queue instance.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>queue.Queue</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="start_mqtt_subscriber">
+<span class="sig-name descname"><span class="pre">start_mqtt_subscriber</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#start_mqtt_subscriber" title="Link to this definition"></a></dt>
+<dd><p>Initializes and starts a background daemon thread that continuously listens to the public EMQX MQTT broker (<code class="docutils literal notranslate"><span class="pre">broker.emqx.io</span></code>) on the topic <code class="docutils literal notranslate"><span class="pre">ad_iot/group_c/device_1/dashboard</span></code> for incoming telemetry and alert data.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The configured MQTT client instance.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>paho.mqtt.client.Client</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="on_message">
+<span class="sig-name descname"><span class="pre">on_message</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">client</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">userdata</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">msg</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#on_message" title="Link to this definition"></a></dt>
+<dd><p>MQTT callback function triggered when a new message arrives from the cloud broker. It decodes the JSON payload and safely places it into the processing queue.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>client</strong> – The MQTT client instance for this callback.</p></li>
+<li><p><strong>userdata</strong> – The private user data as set in Client() or user_data_set().</p></li>
+<li><p><strong>msg</strong> – An instance of MQTTMessage containing the topic, qos, and payload bytes.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="main">
+<span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#main" title="Link to this definition"></a></dt>
+<dd><p>Main execution function to render the Streamlit dashboard UI. It continuously pulls from the <code class="docutils literal notranslate"><span class="pre">msg_queue</span></code> and dynamically updates the following interface components:</p>
+<ul class="simple">
+<li><p><strong>System Status Banner:</strong> A high-level indicator of the current network safety.</p></li>
+<li><p><strong>Threat Status:</strong> Red/Green indicators for active Flooding, Replay, Markov, or Data Injection attacks.</p></li>
+<li><p><strong>Historical Data Chart:</strong> A rolling 60-second line chart of temperature and humidity.</p></li>
+<li><p><strong>Alarms Log:</strong> A chronological dataframe of triggered security events.</p></li>
+<li><p><strong>Live Telemetry:</strong> Metric cards displaying real-time physical readings and Markov states.</p></li>
+</ul>
+</dd></dl>
+
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="../Edge_module/anomaly_detector_code.html" class="btn btn-neutral float-left" title="Edge Node Anomaly Detector" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../Attacks_module/dashboard_attack.html" class="btn btn-neutral float-right" title="Attacks User Interface" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Group C - Yingying Gao, Nouha Madiouni, Estela Mora Barba.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
